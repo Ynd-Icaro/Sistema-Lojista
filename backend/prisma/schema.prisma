@@ -1,0 +1,820 @@
+// SmartFlux ERP - Prisma Schema
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  SELLER
+  VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  PIX
+  BANK_TRANSFER
+  BOLETO
+  INSTALLMENT
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIAL
+  CANCELLED
+  REFUNDED
+}
+
+enum SaleStatus {
+  DRAFT
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  WAITING_PARTS
+  COMPLETED
+  DELIVERED
+  CANCELLED
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum InvoiceType {
+  SALE
+  SERVICE
+  WARRANTY
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  SENT
+  CANCELLED
+}
+
+enum NotificationType {
+  EMAIL
+  WHATSAPP
+  SMS
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+  READ
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+enum ProductImportStatus {
+  OK
+  REVIEW
+  ERROR
+}
+
+// ==================== MODELS ====================
+
+// Tenant - Multi-tenancy support
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  cnpj      String?
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  logo      String?
+  settings  Json?    @default("{}")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users          User[]
+  products       Product[]
+  categories     Category[]
+  suppliers      Supplier[]
+  customers      Customer[]
+  sales          Sale[]
+  serviceOrders  ServiceOrder[]
+  transactions   Transaction[]
+  invoices       Invoice[]
+  notifications  NotificationLog[]
+  invitations    Invitation[]
+  stockMovements StockMovement[]
+
+  @@map("tenants")
+}
+
+// User - Sistema de usuários
+model User {
+  id           String     @id @default(uuid())
+  tenantId     String
+  email        String
+  password     String
+  name         String
+  phone        String?
+  avatar       String?
+  role         UserRole   @default(SELLER)
+  status       UserStatus @default(ACTIVE)
+  lastLogin    DateTime?
+  refreshToken String?
+  settings     Json?      @default("{}")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relations
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sales           Sale[]
+  serviceOrders   ServiceOrder[]
+  auditLogs       AuditLog[]
+  sentInvitations Invitation[]   @relation("InvitedUsers")
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+// Invitation - Convites para usuários
+model Invitation {
+  id        String           @id @default(uuid())
+  tenantId  String
+  email     String
+  role      UserRole         @default(SELLER)
+  token     String           @unique
+  status    InvitationStatus @default(PENDING)
+  expiresAt DateTime
+  invitedBy String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relations
+  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inviter User   @relation("InvitedUsers", fields: [invitedBy], references: [id])
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([token])
+  @@map("invitations")
+}
+
+// Supplier - Fornecedores
+model Supplier {
+  id            String   @id @default(uuid())
+  tenantId      String
+  type          String   @default("PJ") // PF ou PJ
+  name          String
+  tradeName     String?                 // Nome fantasia
+  cpfCnpj       String?
+  ie            String?                 // Inscrição Estadual
+  im            String?                 // Inscrição Municipal
+  email         String?
+  phone         String?
+  whatsapp      String?
+  website       String?
+  contactPerson String?                 // Pessoa de contato
+  address       String?
+  number        String?
+  complement    String?
+  neighborhood  String?
+  city          String?
+  state         String?
+  zipCode       String?
+  country       String?  @default("Brasil")
+  paymentTerms  String?                 // Condições de pagamento
+  leadTime      Int?                    // Prazo de entrega em dias
+  minOrderValue Decimal? @db.Decimal(10, 2) // Valor mínimo de pedido
+  notes         String?
+  rating        Int?     @default(0)    // Avaliação 1-5
+  tags          Json?    @default("[]")
+  bankInfo      Json?    @default("{}")  // Dados bancários
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([tenantId, cpfCnpj])
+  @@index([tenantId])
+  @@index([name])
+  @@map("suppliers")
+}
+
+// Category - Categorias de produtos
+model Category {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  color       String?  @default("#6366f1")
+  icon        String?
+  parentId    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("categories")
+}
+
+// Product - Produtos
+model Product {
+  id                  String              @id @default(uuid())
+  tenantId            String
+  categoryId          String?
+  supplierId          String?             // Fornecedor vinculado
+  parentProductId     String?             // Produto principal para variações
+  sku                 String
+  barcode             String?
+  gtin                String?             // Código de barras EAN/GTIN
+  name                String
+  description         String?
+  shortDescription    String?             // Descrição curta para PDV
+  importName          String?             // Nome para importação/vinculação
+  
+  // Dados do Fornecedor/Compra
+  supplierCode        String?             // Código do fornecedor
+  supplierName        String?             // Nome do fornecedor (legado)
+  lastPurchasePrice   Decimal?            @db.Decimal(10, 2) // Último preço de compra
+  lastPurchaseDate    DateTime?           // Data da última compra
+  averagePurchasePrice Decimal?           @db.Decimal(10, 2) // Preço médio de compra
+  
+  // Características do Produto
+  brand               String?             // Marca
+  model               String?             // Modelo
+  color               String?             // Cor
+  size                String?             // Tamanho
+  material            String?             // Material
+  gender              String?             // Gênero (Masculino/Feminino/Unissex)
+  ageGroup            String?             // Faixa etária (Adulto/Infantil/Bebê)
+  season              String?             // Coleção/Estação
+  style               String?             // Estilo
+  
+  // Informações Fiscais
+  origin              String?             @default("0") // 0-Nacional, 1-Estrangeira, etc
+  ncm                 String?             // NCM
+  cest                String?             // CEST
+  cfop                String?             // CFOP padrão
+  csosn               String?             // CSOSN para Simples Nacional
+  cstIcms             String?             // CST ICMS
+  cstPis              String?             // CST PIS
+  cstCofins           String?             // CST COFINS
+  icmsRate            Decimal?            @db.Decimal(5, 2) // Alíquota ICMS
+  ipiRate             Decimal?            @db.Decimal(5, 2) // Alíquota IPI
+  pisRate             Decimal?            @db.Decimal(5, 2) // Alíquota PIS
+  cofinsRate          Decimal?            @db.Decimal(5, 2) // Alíquota COFINS
+  
+  // Preços
+  costPrice           Decimal             @default(0) @db.Decimal(10, 2)
+  salePrice           Decimal             @db.Decimal(10, 2)
+  promoPrice          Decimal?            @db.Decimal(10, 2)
+  promoStartDate      DateTime?           // Início da promoção
+  promoEndDate        DateTime?           // Fim da promoção
+  wholesalePrice      Decimal?            @db.Decimal(10, 2) // Preço atacado
+  wholesaleMinQty     Int?                // Quantidade mínima atacado
+  profitMargin        Decimal?            @db.Decimal(5, 2) // Margem de lucro %
+  
+  // Estoque
+  stock               Int                 @default(0)
+  reservedStock       Int                 @default(0)  // Estoque reservado
+  availableStock      Int                 @default(0)  // Estoque disponível
+  minStock            Int                 @default(5)
+  maxStock            Int?
+  idealStock          Int?                // Estoque ideal
+  reorderPoint        Int?                // Ponto de reposição
+  unit                String              @default("UN")
+  packQuantity        Int?                @default(1)  // Quantidade por embalagem
+  
+  // Dimensões e Peso
+  weight              Decimal?            @db.Decimal(10, 3) // Peso em KG
+  grossWeight         Decimal?            @db.Decimal(10, 3) // Peso bruto
+  width               Decimal?            @db.Decimal(10, 2) // cm
+  height              Decimal?            @db.Decimal(10, 2) // cm
+  depth               Decimal?            @db.Decimal(10, 2) // cm
+  
+  // Localização no Estoque
+  location            String?             // Localização no estoque (corredor/prateleira)
+  shelf               String?             // Prateleira
+  bin                 String?             // Gaveta/Bin
+  
+  // Mídia
+  images              Json?               @default("[]")
+  mainImage           String?             // Imagem principal
+  videoUrl            String?             // URL de vídeo do produto
+  
+  // Variações e Vinculações
+  tags                Json?               @default("[]")
+  attributes          Json?               @default("{}") // Atributos customizados
+  variationAttributes Json?               @default("[]") // Atributos de variação (cor, tamanho)
+  isMainProduct       Boolean             @default(false)
+  isVariation         Boolean             @default(false)
+  isLinkableProduct   Boolean             @default(false)
+  linkedProductId     String?
+  isKit               Boolean             @default(false) // É um kit/combo
+  kitItems            Json?               @default("[]")  // Itens do kit
+  
+  // Controle
+  importStatus        ProductImportStatus @default(OK)
+  importNotes         String?             // Observações da importação
+  warrantyMonths      Int?                // Garantia em meses
+  expirationDate      DateTime?           // Data de validade (perecíveis)
+  batchNumber         String?             // Número do lote
+  serialNumber        String?             // Número de série
+  isActive            Boolean             @default(true)
+  isFeatured          Boolean             @default(false) // Produto destaque
+  isNewArrival        Boolean             @default(false) // Novidade
+  isBestSeller        Boolean             @default(false) // Mais vendido
+  viewCount           Int                 @default(0)     // Visualizações
+  salesCount          Int                 @default(0)     // Quantidade vendida
+  
+  // SEO / E-commerce
+  slug                String?             // URL amigável
+  metaTitle           String?
+  metaDescription     String?
+  
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  tenant         Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category       Category?   @relation(fields: [categoryId], references: [id])
+  supplier       Supplier?   @relation(fields: [supplierId], references: [id])
+  parentProduct  Product?    @relation("ProductVariations", fields: [parentProductId], references: [id])
+  variations     Product[]   @relation("ProductVariations")
+  linkedProduct  Product?    @relation("ProductLinks", fields: [linkedProductId], references: [id])
+  linkedProducts Product[]   @relation("ProductLinks")
+  saleItems      SaleItem[]
+  orderItems     ServiceOrderItem[]
+  stockMovements StockMovement[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId])
+  @@index([barcode])
+  @@index([gtin])
+  @@index([name])
+  @@index([supplierId])
+  @@map("products")
+}
+
+// Customer - Clientes
+model Customer {
+  id           String   @id @default(uuid())
+  tenantId     String
+  type         String   @default("PF") // PF ou PJ
+  name         String
+  email        String?
+  phone        String?
+  whatsapp     String?
+  cpfCnpj      String?
+  rg           String?
+  birthDate    DateTime?
+  gender       String?
+  address      String?
+  number       String?
+  complement   String?
+  neighborhood String?
+  city         String?
+  state        String?
+  zipCode      String?
+  notes        String?
+  points       Int      @default(0)
+  totalSpent   Decimal  @default(0) @db.Decimal(10, 2)
+  lastPurchase DateTime?
+  tags         Json?    @default("[]")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sales         Sale[]
+  serviceOrders ServiceOrder[]
+  invoices      Invoice[]
+  notifications NotificationLog[]
+
+  @@unique([tenantId, cpfCnpj])
+  @@index([tenantId])
+  @@index([name])
+  @@index([phone])
+  @@map("customers")
+}
+
+// Sale - Vendas
+model Sale {
+  id            String        @id @default(uuid())
+  tenantId      String
+  customerId    String?
+  userId        String
+  code          String        // Código sequencial da venda
+  subtotal      Decimal       @db.Decimal(10, 2)
+  discount      Decimal       @default(0) @db.Decimal(10, 2)
+  discountType  String?       @default("FIXED") // FIXED ou PERCENT
+  tax           Decimal       @default(0) @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
+  paidAmount    Decimal       @default(0) @db.Decimal(10, 2)
+  changeAmount  Decimal       @default(0) @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @default(CASH)
+  paymentStatus PaymentStatus @default(PENDING)
+  status        SaleStatus    @default(COMPLETED)
+  notes         String?
+  metadata      Json?         @default("{}")
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer  Customer?  @relation(fields: [customerId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+  items     SaleItem[]
+  payments  SalePayment[]
+  invoices  Invoice[]
+  transactions Transaction[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([createdAt])
+  @@map("sales")
+}
+
+// SaleItem - Itens da venda
+model SaleItem {
+  id        String   @id @default(uuid())
+  saleId    String
+  productId String
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10, 2)
+  discount  Decimal  @default(0) @db.Decimal(10, 2)
+  total     Decimal  @db.Decimal(10, 2)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@map("sale_items")
+}
+
+// SalePayment - Pagamentos da venda (múltiplas formas)
+model SalePayment {
+  id            String        @id @default(uuid())
+  saleId        String
+  method        PaymentMethod
+  amount        Decimal       @db.Decimal(10, 2)
+  installments  Int           @default(1)
+  cardBrand     String?
+  authCode      String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+
+  // Relations
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId])
+  @@map("sale_payments")
+}
+
+// ServiceOrder - Ordens de Serviço
+model ServiceOrder {
+  id              String      @id @default(uuid())
+  tenantId        String
+  customerId      String
+  userId          String
+  code            String      // Código sequencial
+  title           String
+  description     String?
+  deviceType      String?     // Tipo de equipamento
+  deviceBrand     String?     // Marca
+  deviceModel     String?     // Modelo
+  deviceSerial    String?     // Número de série
+  deviceCondition String?     // Condição na entrada
+  reportedIssue   String?     // Problema relatado
+  diagnosis       String?     // Diagnóstico técnico
+  solution        String?     // Solução aplicada
+  laborCost       Decimal     @default(0) @db.Decimal(10, 2)
+  partsCost       Decimal     @default(0) @db.Decimal(10, 2)
+  discount        Decimal     @default(0) @db.Decimal(10, 2)
+  total           Decimal     @db.Decimal(10, 2)
+  status          OrderStatus @default(PENDING)
+  priority        String      @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  estimatedDate   DateTime?
+  completedAt     DateTime?
+  deliveredAt     DateTime?
+  warrantyDays    Int         @default(90)
+  notes           String?
+  attachments     Json?       @default("[]")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer     Customer           @relation(fields: [customerId], references: [id])
+  user         User               @relation(fields: [userId], references: [id])
+  items        ServiceOrderItem[]
+  invoices     Invoice[]
+  transactions Transaction[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([status])
+  @@map("service_orders")
+}
+
+// ServiceOrderItem - Itens/Peças da OS
+model ServiceOrderItem {
+  id             String   @id @default(uuid())
+  serviceOrderId String
+  productId      String?
+  description    String
+  quantity       Int      @default(1)
+  unitPrice      Decimal  @db.Decimal(10, 2)
+  total          Decimal  @db.Decimal(10, 2)
+  createdAt      DateTime @default(now())
+
+  // Relations
+  serviceOrder ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  product      Product?     @relation(fields: [productId], references: [id])
+
+  @@index([serviceOrderId])
+  @@map("service_order_items")
+}
+
+// Transaction - Transações financeiras
+model Transaction {
+  id              String            @id @default(uuid())
+  tenantId        String
+  saleId          String?
+  serviceOrderId  String?
+  categoryId      String?
+  type            TransactionType
+  description     String
+  amount          Decimal           @db.Decimal(10, 2)
+  dueDate         DateTime
+  paidDate        DateTime?
+  status          TransactionStatus @default(PENDING)
+  paymentMethod   PaymentMethod?
+  reference       String?           // Referência externa
+  notes           String?
+  attachments     Json?             @default("[]")
+  recurrence      String?           // NONE, DAILY, WEEKLY, MONTHLY, YEARLY
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  tenant       Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sale         Sale?                 @relation(fields: [saleId], references: [id])
+  serviceOrder ServiceOrder?         @relation(fields: [serviceOrderId], references: [id])
+  category     TransactionCategory?  @relation(fields: [categoryId], references: [id])
+
+  @@index([tenantId])
+  @@index([type])
+  @@index([dueDate])
+  @@index([status])
+  @@index([serviceOrderId])
+  @@map("transactions")
+}
+
+// TransactionCategory - Categorias de transações
+model TransactionCategory {
+  id          String          @id @default(uuid())
+  tenantId    String?
+  name        String
+  type        TransactionType
+  color       String?         @default("#6366f1")
+  icon        String?
+  isSystem    Boolean         @default(false)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  transactions Transaction[]
+
+  @@index([tenantId])
+  @@map("transaction_categories")
+}
+
+// Invoice - Notas Fiscais / Recibos
+model Invoice {
+  id             String        @id @default(uuid())
+  tenantId       String
+  customerId     String?
+  saleId         String?
+  serviceOrderId String?
+  type           InvoiceType   @default(SALE)
+  status         InvoiceStatus @default(DRAFT)
+  number         String        // Número sequencial
+  series         String        @default("1")
+  issueDate      DateTime      @default(now())
+  dueDate        DateTime?
+  
+  // Valores
+  subtotal       Decimal       @db.Decimal(10, 2)
+  discount       Decimal       @default(0) @db.Decimal(10, 2)
+  tax            Decimal       @default(0) @db.Decimal(10, 2)
+  total          Decimal       @db.Decimal(10, 2)
+  
+  // Dados do emitente (cópia para histórico)
+  issuerName     String?
+  issuerCnpj     String?
+  issuerAddress  String?
+  issuerCity     String?
+  issuerState    String?
+  issuerPhone    String?
+  issuerEmail    String?
+  
+  // Dados do destinatário
+  recipientName  String?
+  recipientDoc   String?       // CPF ou CNPJ
+  recipientAddress String?
+  recipientCity  String?
+  recipientState String?
+  recipientPhone String?
+  recipientEmail String?
+  
+  // Descrição e observações
+  description    String?
+  items          Json?         @default("[]")
+  notes          String?
+  internalNotes  String?
+  
+  // Controle
+  accessKey      String?       @unique // Chave de acesso
+  qrCode         String?
+  pdfUrl         String?
+  xmlUrl         String?
+  
+  // Garantia
+  warrantyDays   Int?
+  warrantyExpires DateTime?
+  
+  // Envio
+  sentAt         DateTime?
+  sentTo         String?       // Email/WhatsApp
+  sentMethod     String?
+  
+  cancelledAt    DateTime?
+  cancelReason   String?
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer     Customer?     @relation(fields: [customerId], references: [id])
+  sale         Sale?         @relation(fields: [saleId], references: [id])
+  serviceOrder ServiceOrder? @relation(fields: [serviceOrderId], references: [id])
+
+  @@unique([tenantId, number, series])
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([status])
+  @@map("invoices")
+}
+
+// NotificationLog - Log de notificações
+model NotificationLog {
+  id          String             @id @default(uuid())
+  tenantId    String
+  customerId  String?
+  type        NotificationType
+  status      NotificationStatus @default(PENDING)
+  recipient   String             // Email ou telefone
+  subject     String?
+  content     String
+  metadata    Json?              @default("{}")
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  readAt      DateTime?
+  errorMsg    String?
+  retryCount  Int                @default(0)
+  createdAt   DateTime           @default(now())
+
+  // Relations
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId])
+  @@index([type])
+  @@index([status])
+  @@map("notification_logs")
+}
+
+// StockMovement - Movimentações de estoque
+model StockMovement {
+  id          String   @id @default(uuid())
+  tenantId    String
+  productId   String
+  type        String   // IN, OUT, ADJUSTMENT
+  quantity    Int
+  reason      String?
+  reference   String?  // ID da venda/OS relacionada
+  previousStock Int
+  newStock    Int
+  userId      String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([productId])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+// AuditLog - Log de auditoria
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String?
+  userId     String?
+  action     String   // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entity     String   // Nome da entidade
+  entityId   String?  // ID da entidade
+  oldData    Json?
+  newData    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// Settings - Configurações globais
+model Settings {
+  id        String   @id @default(uuid())
+  tenantId  String?  @unique
+  key       String
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
+  @@map("settings")
+}
