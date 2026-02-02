@@ -6,7 +6,10 @@
     "frontend"
   ],
   "scripts": {
-    "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
+    "build": "concurrently \"npm run build --workspace=backend\" \"npm run build --workspace=frontend\"",
     "start": "npm start --workspace=backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }
