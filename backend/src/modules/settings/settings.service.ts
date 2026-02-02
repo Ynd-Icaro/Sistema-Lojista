@@ -175,13 +175,13 @@ export class SettingsService {
 
     return {
       company: {
-        name: settings?.company?.name || tenant?.name || process.env.COMPANY_NAME || '',
-        document: settings?.company?.document || tenant?.cnpj || process.env.COMPANY_CNPJ || '',
-        email: settings?.company?.email || tenant?.email || process.env.COMPANY_EMAIL || '',
-        phone: settings?.company?.phone || tenant?.phone || process.env.COMPANY_PHONE || '',
-        address: settings?.company?.address || tenant?.address || process.env.COMPANY_ADDRESS || '',
-        city: settings?.company?.city || tenant?.city || process.env.COMPANY_CITY || '',
-        state: settings?.company?.state || tenant?.state || process.env.COMPANY_STATE || '',
+        name: settings?.company?.name || tenant?.name || '',
+        document: settings?.company?.document || tenant?.cnpj || '',
+        email: settings?.company?.email || tenant?.email || '',
+        phone: settings?.company?.phone || tenant?.phone || '',
+        address: settings?.company?.address || tenant?.address || '',
+        city: settings?.company?.city || tenant?.city || '',
+        state: settings?.company?.state || tenant?.state || '',
         zipCode: settings?.company?.zipCode || tenant?.zipCode || '',
       },
       notifications: {
@@ -240,13 +240,13 @@ export class SettingsService {
     const updatedSettings = {
       ...currentSettings,
       company: {
-        name: data.name || process.env.COMPANY_NAME || '',
-        document: data.document || process.env.COMPANY_CNPJ || '',
-        email: data.email || process.env.COMPANY_EMAIL || '',
-        phone: data.phone || process.env.COMPANY_PHONE || '',
-        address: data.address || process.env.COMPANY_ADDRESS || '',
-        city: data.city || process.env.COMPANY_CITY || '',
-        state: data.state || process.env.COMPANY_STATE || '',
+        name: data.name || '',
+        document: data.document || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        address: data.address || '',
+        city: data.city || '',
+        state: data.state || '',
         zipCode: data.zipCode || '',
       },
     };
