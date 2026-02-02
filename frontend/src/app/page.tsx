@@ -678,39 +678,42 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
       {/* Features Section */}
       <section id="recursos" ref={featuresRef} className="py-24 px-4">
         <div className="container mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="text-center mb-16"
           >
-            <span className="text-primary-400 font-semibold text-sm uppercase tracking-wider mb-4 block">Recursos</span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-              Tudo que seu negócio precisa
-            </h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Ferramentas poderosas e intuitivas para você focar no que realmente importa: vender mais.
-            </p>
+        <span className="text-primary-400 font-semibold text-sm uppercase tracking-wider mb-4 block">Recursos</span>
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
+          Tudo que seu negócio precisa
+        </h2>
+        <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+          Ferramentas poderosas e intuitivas para você focar no que realmente importa: vender mais.
+        </p>
           </motion.div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="feature-card group relative bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800 hover:border-primary-500/50 transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-secondary-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
-                  <feature.icon className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-slate-400">{feature.description}</p>
-              </div>
-            ))}
+        {features.map((feature, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 60 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
+            className="group relative bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-800 hover:border-primary-500/50 transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-secondary-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
+          <feature.icon className="w-7 h-7 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
+            <p className="text-slate-400">{feature.description}</p>
+          </motion.div>
+        ))}
           </div>
         </div>
       </section>
