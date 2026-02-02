@@ -203,7 +203,7 @@ export class SalesService {
 
       // Update product stock and create movements in parallel
       const stockUpdates = dto.items.map(async (item) => {
-        const previousStock = productStockMap.get(item.productId) || 0;
+        const previousStock = Number(productStockMap.get(item.productId) || 0);
         const newStock = previousStock - item.quantity;
 
         // Update stock

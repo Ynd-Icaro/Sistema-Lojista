@@ -134,7 +134,7 @@ export class ProductImportExportService {
         if (categoryName) {
           const foundCategoryId = categoryMap.get(categoryName.toLowerCase());
           if (foundCategoryId) {
-            categoryId = foundCategoryId;
+            categoryId = foundCategoryId as string;
           } else {
             needsReview.push(`Categoria "${categoryName}" não encontrada`);
           }
