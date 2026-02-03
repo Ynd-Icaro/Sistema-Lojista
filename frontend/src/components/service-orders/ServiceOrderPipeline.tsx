@@ -26,6 +26,7 @@ interface ServiceOrder {
   deviceType?: string;
   deviceBrand?: string;
   laborCost?: number;
+  estimatedDate?: string;
   createdAt: string;
 }
 
