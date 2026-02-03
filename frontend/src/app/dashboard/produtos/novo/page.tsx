@@ -49,7 +49,7 @@ const productSchema = z.object({
   warrantyMonths: z.number().optional(),
   
   // Preços
-  costPrice: z.number().min(0, 'Preço de custo inválido'),
+  costPrice: z.number().min(0).optional(),
   salePrice: z.number().min(0.01, 'Preço de venda é obrigatório'),
   wholesalePrice: z.number().optional(),
   promoPrice: z.number().optional(),
@@ -59,8 +59,8 @@ const productSchema = z.object({
   markup: z.number().optional(),
   
   // Estoque
-  stock: z.number().min(0, 'Estoque inválido'),
-  minStock: z.number().min(0, 'Estoque mínimo inválido'),
+  stock: z.number().min(0).optional(),
+  minStock: z.number().min(0).optional(),
   maxStock: z.number().optional(),
   reservedStock: z.number().optional(),
   stockLocation: z.string().optional(),
@@ -230,31 +230,72 @@ export default function NewProductPage() {
   });
 
   const onSubmit = (data: ProductForm) => {
-    // Limpa campos opcionais vazios
+    // Campos que são realmente obrigatórios no backend
+    const requiredFields = {
+      name: data.name.trim(),
+      sku: data.sku.trim(),
+      salePrice: data.salePrice,
+    };
+
+    // Campos opcionais - apenas inclui se tiver valor válido
+    const optionalFields: any = {};
+
+    // Strings opcionais - apenas se não estiverem vazias
+    if (data.barcode?.trim()) optionalFields.barcode = data.barcode.trim();
+    if (data.gtin?.trim()) optionalFields.gtin = data.gtin.trim();
+    if (data.mpn?.trim()) optionalFields.mpn = data.mpn.trim();
+    if (data.description?.trim()) optionalFields.description = data.description.trim();
+    if (data.shortDescription?.trim()) optionalFields.shortDescription = data.shortDescription.trim();
+    if (data.categoryId?.trim()) optionalFields.categoryId = data.categoryId.trim();
+    if (data.supplierId?.trim()) optionalFields.supplierId = data.supplierId.trim();
+    if (data.brand?.trim()) optionalFields.brand = data.brand.trim();
+    if (data.model?.trim()) optionalFields.model = data.model.trim();
+    if (data.ncm?.trim()) optionalFields.ncm = data.ncm.trim();
+    if (data.cest?.trim()) optionalFields.cest = data.cest.trim();
+    if (data.cfop?.trim()) optionalFields.cfop = data.cfop.trim();
+    if (data.cst?.trim()) optionalFields.cst = data.cst.trim();
+    if (data.origem?.trim()) optionalFields.origem = data.origem.trim();
+    if (data.stockLocation?.trim()) optionalFields.stockLocation = data.stockLocation.trim();
+    if (data.shelfLocation?.trim()) optionalFields.shelfLocation = data.shelfLocation.trim();
+
+    // Números opcionais - apenas se forem maiores que 0
+    if (data.costPrice && data.costPrice > 0) optionalFields.costPrice = data.costPrice;
+    if (data.wholesalePrice && data.wholesalePrice > 0) optionalFields.wholesalePrice = data.wholesalePrice;
+    if (data.promoPrice && data.promoPrice > 0) optionalFields.promoPrice = data.promoPrice;
+    if (data.stock !== undefined && data.stock >= 0) optionalFields.stock = data.stock;
+    if (data.minStock && data.minStock > 0) optionalFields.minStock = data.minStock;
+    if (data.maxStock && data.maxStock > 0) optionalFields.maxStock = data.maxStock;
+    if (data.reservedStock && data.reservedStock > 0) optionalFields.reservedStock = data.reservedStock;
+    if (data.weight && data.weight > 0) optionalFields.weight = data.weight;
+    if (data.height && data.height > 0) optionalFields.height = data.height;
+    if (data.width && data.width > 0) optionalFields.width = data.width;
+    if (data.length && data.length > 0) optionalFields.length = data.length;
+    if (data.warrantyMonths && data.warrantyMonths > 0) optionalFields.warrantyMonths = data.warrantyMonths;
+
+    // Taxas - apenas se forem >= 0
+    if (data.icmsRate !== undefined && data.icmsRate >= 0) optionalFields.icmsRate = data.icmsRate;
+    if (data.ipiRate !== undefined && data.ipiRate >= 0) optionalFields.ipiRate = data.ipiRate;
+    if (data.pisRate !== undefined && data.pisRate >= 0) optionalFields.pisRate = data.pisRate;
+    if (data.cofinsRate !== undefined && data.cofinsRate >= 0) optionalFields.cofinsRate = data.cofinsRate;
+
+    // Datas opcionais
+    if (data.promoStartDate?.trim()) optionalFields.promoStartDate = data.promoStartDate.trim();
+    if (data.promoEndDate?.trim()) optionalFields.promoEndDate = data.promoEndDate.trim();
+
+    // Configurações booleanas
+    optionalFields.isActive = data.isActive ?? true;
+    optionalFields.isFeatured = data.isFeatured ?? false;
+    optionalFields.allowBackorder = data.allowBackorder ?? false;
+    optionalFields.trackInventory = data.trackInventory ?? true;
+
+    // Remove campos que não existem no backend
+    // hasVariations, variationAttribute1, variationAttribute2, variationValues1, variationValues2
+    // seoTitle, seoDescription, seoKeywords, slug, profitMargin, markup
+
+    // Combina campos obrigatórios com opcionais
     const cleanData = {
-      ...data,
-      barcode: data.barcode || undefined,
-      gtin: data.gtin || undefined,
-      mpn: data.mpn || undefined,
-      description: data.description || undefined,
-      shortDescription: data.shortDescription || undefined,
-      categoryId: data.categoryId || undefined,
-      supplierId: data.supplierId || undefined,
-      brand: data.brand || undefined,
-      model: data.model || undefined,
-      ncm: data.ncm || undefined,
-      cest: data.cest || undefined,
-      cfop: data.cfop || undefined,
-      cst: data.cst || undefined,
-      origem: data.origem || undefined,
-      stockLocation: data.stockLocation || undefined,
-      shelfLocation: data.shelfLocation || undefined,
-      seoTitle: data.seoTitle || undefined,
-      seoDescription: data.seoDescription || undefined,
-      seoKeywords: data.seoKeywords || undefined,
-      slug: data.slug || undefined,
-      promoStartDate: data.promoStartDate || undefined,
-      promoEndDate: data.promoEndDate || undefined,
+      ...requiredFields,
+      ...optionalFields,
     };
 
     if (isEditing) {
@@ -542,7 +583,7 @@ export default function NewProductPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="label">Preço de Custo *</label>
+                <label className="label">Preço de Custo</label>
                 <input
                   type="number"
                   step="0.01"

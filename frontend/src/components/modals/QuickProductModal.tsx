@@ -8,17 +8,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { productsApi, categoriesApi } from '@/lib/api';
+import { productsApi, categoriesApi, suppliersApi } from '@/lib/api';
 import { showApiError } from '@/lib/error-handler';
 import { QuickCategoryModal } from './QuickCategoryModal';
+import { QuickSupplierModal } from './QuickSupplierModal';
 import { useModalCache } from '@/hooks/useModalCache';
 
 const quickProductSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
   sku: z.string().min(1, 'SKU é obrigatório'),
   price: z.number().min(0.01, 'Preço de venda é obrigatório'),
+  costPrice: z.number().min(0).optional(),
   stock: z.number().min(0).default(0),
   categoryId: z.string().optional(),
+  supplierId: z.string().optional(),
   barcode: z.string().optional(),
 });
 
@@ -39,6 +42,7 @@ export function QuickProductModal({
 }: QuickProductModalProps) {
   const queryClient = useQueryClient();
   const [showQuickCategory, setShowQuickCategory] = useState(false);
+  const [showQuickSupplier, setShowQuickSupplier] = useState(false);
   const { loadCache, saveCache, clearCache } = useModalCache('quick-product');
   
   const {
@@ -84,6 +88,13 @@ export function QuickProductModal({
     enabled: isOpen,
   });
 
+  // Fetch suppliers
+  const { data: suppliersData } = useQuery({
+    queryKey: ['suppliers-simple'],
+    queryFn: () => suppliersApi.getSimpleList().then((res) => res.data),
+    enabled: isOpen,
+  });
+
   const createMutation = useMutation({
     mutationFn: (data: any) => productsApi.create(data),
     onSuccess: (response) => {
@@ -105,9 +116,9 @@ export function QuickProductModal({
     createMutation.mutate({
       ...data,
       salePrice: data.price, // Map price to salePrice
+      costPrice: data.costPrice || data.price, // Use sale price if cost price not provided
       isActive: true,
-      costPrice: 0, // Default cost price
-      minStock: 0, // Default min stock
+      minStock: 0, // Default min stock - doesn't affect creation
     });
   };
 
@@ -204,12 +215,37 @@ export function QuickProductModal({
                   </div>
 
                   <div>
+                    <label className="label">Preço de Custo</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      {...register('costPrice', { valueAsNumber: true })}
+                      className="input"
+                      placeholder="0,00"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                     <label className="label">Estoque Inicial</label>
                     <input
                       type="number"
                       {...register('stock', { valueAsNumber: true })}
                       className="input"
                       placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="label">Estoque Mínimo</label>
+                    <input
+                      type="number"
+                      defaultValue="0"
+                      className="input"
+                      placeholder="0"
+                      disabled
+                      title="Estoque mínimo será definido como 0"
                     />
                   </div>
                 </div>
@@ -233,6 +269,31 @@ export function QuickProductModal({
                       onClick={() => setShowQuickCategory(true)}
                       className="btn-secondary px-3"
                       title="Criar nova categoria"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label">Fornecedor</label>
+                  <div className="flex gap-2">
+                    <select
+                      {...register('supplierId')}
+                      className="input flex-1"
+                    >
+                      <option value="">Sem fornecedor</option>
+                      {suppliersData?.map((supplier: any) => (
+                        <option key={supplier.id} value={supplier.id}>
+                          {supplier.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickSupplier(true)}
+                      className="btn-secondary px-3"
+                      title="Criar novo fornecedor"
                     >
                       <Plus className="w-5 h-5" />
                     </button>
@@ -274,6 +335,16 @@ export function QuickProductModal({
         onSuccess={(category) => {
           setValue('categoryId', category.id);
           queryClient.invalidateQueries({ queryKey: ['categories'] });
+        }}
+      />
+
+      {/* Quick Supplier Modal */}
+      <QuickSupplierModal
+        isOpen={showQuickSupplier}
+        onClose={() => setShowQuickSupplier(false)}
+        onSuccess={(supplier) => {
+          setValue('supplierId', supplier.id);
+          queryClient.invalidateQueries({ queryKey: ['suppliers-simple'] });
         }}
       />
     </>

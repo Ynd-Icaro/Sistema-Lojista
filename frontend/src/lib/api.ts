@@ -273,6 +273,8 @@ export const serviceOrdersApi = {
   getAll: (params?: { page?: number; limit?: number; status?: string; search?: string }) =>
     api.get('/service-orders', { params }),
   getOne: (id: string) => api.get(`/service-orders/${id}`),
+  getStats: () => api.get('/service-orders/stats'),
+  getOverdueCount: () => api.get('/service-orders/overdue-count'),
   create: (data: any) => api.post('/service-orders', data),
   update: (id: string, data: any) => api.put(`/service-orders/${id}`, data),
   updateStatus: (id: string, status: string, notes?: string) =>

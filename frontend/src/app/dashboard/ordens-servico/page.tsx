@@ -94,6 +94,32 @@ const priorityLabels: Record<string, string> = {
   URGENT: 'Urgente',
 };
 
+const getDeadlineStatus = (estimatedDate: string | null) => {
+  if (!estimatedDate) return null;
+  
+  const now = new Date();
+  const deadline = new Date(estimatedDate);
+  const diffTime = deadline.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return 'overdue'; // Atrasado
+  if (diffDays === 0) return 'expires_today'; // Expira Hoje
+  if (diffDays <= 2) return 'on_time'; // Em dia (pelo menos 2 dias antes)
+  return 'on_time';
+};
+
+const deadlineStatusColors: Record<string, string> = {
+  on_time: 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20',
+  expires_today: 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20',
+  overdue: 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20',
+};
+
+const deadlineStatusLabels: Record<string, string> = {
+  on_time: 'Em dia',
+  expires_today: 'Expira hoje',
+  overdue: 'Atrasado',
+};
+
 export default function OrdensServicoPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -275,7 +301,7 @@ export default function OrdensServicoPage() {
     },
     {
       label: 'Total',
-      value: ordersData?.total || 0,
+      value: ordersData?.meta?.total || 0,
       icon: Wrench,
       color: 'text-primary-600',
       bg: 'bg-primary-100 dark:bg-primary-900/30',
@@ -426,15 +452,19 @@ export default function OrdensServicoPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {ordersData.data.map((order: any) => (
-                      <tr 
-                        key={order.id} 
-                        className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                        onClick={() => openDetailModal(order)}
-                      >
+                    {ordersData.data.map((order: any) => {
+                      const deadlineStatus = getDeadlineStatus(order.estimatedDate);
+                      return (
+                        <tr 
+                          key={order.id} 
+                          className={`border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${
+                            deadlineStatus ? deadlineStatusColors[deadlineStatus] : ''
+                          }`}
+                          onClick={() => openDetailModal(order)}
+                        >
                         <td className="px-4 py-3">
                           <span className="font-bold text-primary-600 dark:text-primary-400">
-                            #{order.orderNumber}
+                            #{order.orderNumber || order.code}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -517,7 +547,8 @@ export default function OrdensServicoPage() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -539,7 +570,7 @@ export default function OrdensServicoPage() {
           )}
 
           {/* Pagination */}
-          {ordersData?.totalPages > 1 && (
+          {ordersData?.meta?.totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -549,11 +580,11 @@ export default function OrdensServicoPage() {
                 Anterior
               </button>
               <span className="text-sm text-slate-600 dark:text-slate-400">
-                Página {page} de {ordersData.totalPages}
+                Página {page} de {ordersData.meta?.totalPages}
               </span>
               <button
-                onClick={() => setPage((p) => Math.min(ordersData.totalPages, p + 1))}
-                disabled={page === ordersData.totalPages}
+                onClick={() => setPage((p) => Math.min(ordersData.meta?.totalPages, p + 1))}
+                disabled={page === ordersData.meta?.totalPages}
                 className="btn-secondary"
               >
                 Próxima
@@ -572,17 +603,21 @@ export default function OrdensServicoPage() {
             </div>
           ) : ordersData?.data && ordersData.data.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {ordersData.data.map((order: any) => (
-                <motion.div
-                  key={order.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="card hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => openDetailModal(order)}
-                >
+              {ordersData.data.map((order: any) => {
+                const deadlineStatus = getDeadlineStatus(order.estimatedDate);
+                return (
+                  <motion.div
+                    key={order.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`card hover:shadow-lg transition-shadow cursor-pointer ${
+                      deadlineStatus ? deadlineStatusColors[deadlineStatus] : ''
+                    }`}
+                    onClick={() => openDetailModal(order)}
+                  >
                   <div className="flex items-start justify-between mb-3">
                     <span className="font-bold text-primary-600 dark:text-primary-400">
-                      #{order.orderNumber}
+                      #{order.orderNumber || order.code}
                     </span>
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-medium ${priorityColors[order.priority]}`}>
@@ -662,7 +697,8 @@ export default function OrdensServicoPage() {
                     </button>
                   </div>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="card text-center py-12">
@@ -681,7 +717,7 @@ export default function OrdensServicoPage() {
           )}
 
           {/* Pagination */}
-          {ordersData?.totalPages > 1 && (
+          {ordersData?.meta?.totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-4">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -691,11 +727,11 @@ export default function OrdensServicoPage() {
                 Anterior
               </button>
               <span className="text-sm text-slate-600 dark:text-slate-400">
-                Página {page} de {ordersData.totalPages}
+                Página {page} de {ordersData.meta?.totalPages}
               </span>
               <button
-                onClick={() => setPage((p) => Math.min(ordersData.totalPages, p + 1))}
-                disabled={page === ordersData.totalPages}
+                onClick={() => setPage((p) => Math.min(ordersData.meta?.totalPages, p + 1))}
+                disabled={page === ordersData.meta?.totalPages}
                 className="btn-secondary"
               >
                 Próxima

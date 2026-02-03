@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -28,6 +29,7 @@ import {
 import { useAuthStore } from '@/store';
 import { useAuthHydration } from '@/hooks/useAuthHydration';
 import { cn, getInitials } from '@/lib/utils';
+import { serviceOrdersApi } from '@/lib/api';
 
 const menuItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -52,6 +54,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { isHydrated, isValidating, isAuthenticated } = useAuthHydration();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  // Fetch overdue service orders count
+  const { data: overdueData } = useQuery({
+    queryKey: ['service-orders-overdue'],
+    queryFn: () => serviceOrdersApi.getOverdueCount().then((res) => res.data),
+    refetchInterval: 60000, // Refetch every minute
+  });
+
+  const overdueCount = overdueData?.count || 0;
 
   useEffect(() => {
     // Só redireciona após a hydration completa
@@ -186,10 +198,75 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Right side */}
             <div className="flex items-center gap-3">
               {/* Notifications */}
-              <button className="relative p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger-500 rounded-full" />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setNotificationsOpen(!notificationsOpen)}
+                  className="relative p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                >
+                  <Bell className="w-5 h-5" />
+                  {overdueCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-danger-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {overdueCount > 99 ? '99+' : overdueCount}
+                    </span>
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {notificationsOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setNotificationsOpen(false)}
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-soft-lg z-50"
+                      >
+                        <div className="p-4">
+                          <h3 className="font-semibold text-slate-900 dark:text-white mb-3">
+                            Notificações
+                          </h3>
+                          {overdueCount > 0 ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3 p-3 bg-danger-50 dark:bg-danger-900/20 rounded-lg border border-danger-200 dark:border-danger-800">
+                                <div className="w-8 h-8 bg-danger-100 dark:bg-danger-900/30 rounded-full flex items-center justify-center">
+                                  <Wrench className="w-4 h-4 text-danger-600 dark:text-danger-400" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-danger-900 dark:text-danger-100">
+                                    Ordens de Serviço em Atraso
+                                  </p>
+                                  <p className="text-xs text-danger-700 dark:text-danger-300">
+                                    {overdueCount} {overdueCount === 1 ? 'ordem' : 'ordens'} de serviço {overdueCount === 1 ? 'está' : 'estão'} atrasada{overdueCount === 1 ? '' : 's'}
+                                  </p>
+                                </div>
+                              </div>
+                              <Link
+                                href="/dashboard/ordens-servico"
+                                onClick={() => setNotificationsOpen(false)}
+                                className="block w-full text-center py-2 px-4 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors"
+                              >
+                                Ver Ordens de Serviço
+                              </Link>
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                <Bell className="w-6 h-6 text-green-600 dark:text-green-400" />
+                              </div>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">
+                                Nenhuma notificação pendente
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* User menu */}
               <div className="relative">

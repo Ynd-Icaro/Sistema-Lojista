@@ -64,6 +64,7 @@ export function QuickSupplierModal({ isOpen, onClose, onSuccess }: QuickSupplier
     mutationFn: (data: any) => suppliersApi.create(data),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['suppliers-simple'] });
       toast.success('Fornecedor criado com sucesso!');
       clearCache();
       reset();

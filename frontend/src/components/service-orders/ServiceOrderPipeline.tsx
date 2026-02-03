@@ -58,6 +58,26 @@ const priorityLabels: Record<string, string> = {
   URGENT: 'Urgente',
 };
 
+const getDeadlineStatus = (estimatedDate: string | null) => {
+  if (!estimatedDate) return null;
+  
+  const now = new Date();
+  const deadline = new Date(estimatedDate);
+  const diffTime = deadline.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return 'overdue'; // Atrasado
+  if (diffDays === 0) return 'expires_today'; // Expira Hoje
+  if (diffDays <= 2) return 'on_time'; // Em dia (pelo menos 2 dias antes)
+  return 'on_time';
+};
+
+const deadlineStatusColors: Record<string, string> = {
+  on_time: 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20',
+  expires_today: 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20',
+  overdue: 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20',
+};
+
 export function ServiceOrderPipeline({
   orders,
   columns,
@@ -196,21 +216,24 @@ export function ServiceOrderPipeline({
                   </motion.div>
                 )}
 
-                {ordersByStatus[column.key]?.map((order) => (
-                  <div
-                    key={order.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, order)}
-                    onDragEnd={handleDragEnd}
-                    className={`
-                      bg-white dark:bg-slate-900 rounded-lg p-3 shadow-sm 
-                      border border-slate-200 dark:border-slate-700 
-                      hover:shadow-md hover:border-primary-300 dark:hover:border-primary-600
-                      transition-all cursor-grab active:cursor-grabbing
-                      ${draggedItem?.id === order.id ? 'opacity-50 scale-95' : ''}
-                    `}
-                    onClick={() => onViewDetails(order)}
-                  >
+                {ordersByStatus[column.key]?.map((order) => {
+                  const deadlineStatus = getDeadlineStatus(order.estimatedDate);
+                  return (
+                    <div
+                      key={order.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, order)}
+                      onDragEnd={handleDragEnd}
+                      className={`
+                        bg-white dark:bg-slate-900 rounded-lg p-3 shadow-sm 
+                        border border-slate-200 dark:border-slate-700 
+                        hover:shadow-md hover:border-primary-300 dark:hover:border-primary-600
+                        transition-all cursor-grab active:cursor-grabbing
+                        ${draggedItem?.id === order.id ? 'opacity-50 scale-95' : ''}
+                        ${deadlineStatus ? deadlineStatusColors[deadlineStatus] : ''}
+                      `}
+                      onClick={() => onViewDetails(order)}
+                    >
                     {/* Drag Handle */}
                     <div className="flex items-start gap-2 mb-2">
                       <div className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-grab">
@@ -318,7 +341,8 @@ export function ServiceOrderPipeline({
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
 
                 {ordersByStatus[column.key]?.length === 0 && !isDropTarget && (
                   <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-sm">
