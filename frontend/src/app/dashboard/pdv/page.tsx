@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { productsApi, customersApi, salesApi } from '@/lib/api';
+import { showApiError } from '@/lib/error-handler';
 import { useCartStore } from '@/store';
 import { formatCurrency, debounce } from '@/lib/utils';
 import { QuickCustomerModal } from '@/components/modals/QuickCustomerModal';
@@ -99,7 +100,7 @@ export default function PDVPage() {
       setReceivedAmount('');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao finalizar venda');
+      showApiError(error, 'Erro ao finalizar venda');
     },
   });
 

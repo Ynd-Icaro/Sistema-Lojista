@@ -33,6 +33,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { serviceOrdersApi, customersApi } from '@/lib/api';
+import { showApiError } from '@/lib/error-handler';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { QuickCustomerModal } from '@/components/modals/QuickCustomerModal';
@@ -143,7 +144,7 @@ export default function OrdensServicoPage() {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao criar ordem');
+      showApiError(error, 'Erro ao criar ordem de serviço');
     },
   });
 

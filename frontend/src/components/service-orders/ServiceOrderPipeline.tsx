@@ -112,18 +112,32 @@ export function ServiceOrderPipeline({
     e.preventDefault();
     
     if (draggedItem && draggedItem.status !== newStatus) {
-      // Verifica transições válidas
-      const validTransitions: Record<string, string[]> = {
-        PENDING: ['IN_PROGRESS', 'CANCELLED'],
-        IN_PROGRESS: ['WAITING_PARTS', 'COMPLETED', 'CANCELLED'],
-        WAITING_PARTS: ['IN_PROGRESS', 'CANCELLED'],
-        COMPLETED: ['DELIVERED', 'IN_PROGRESS'],
-        DELIVERED: [],
-        CANCELLED: ['PENDING'],
-      };
+      // Transições mais flexíveis - permite movimento livre para conclusão se atrasado
+      const currentTime = new Date();
+      const createdAt = new Date(draggedItem.createdAt);
+      const daysDiff = (currentTime.getTime() - createdAt.getTime()) / (1000 * 3600 * 24);
+      const isOverdue = daysDiff > 7; // Considera atrasado após 7 dias
 
-      if (validTransitions[draggedItem.status]?.includes(newStatus)) {
+      // Permite movimento direto para COMPLETED se atrasado ou para etapas anteriores
+      const allowFlexibleTransitions = isOverdue || newStatus === 'COMPLETED' || 
+        ['PENDING', 'IN_PROGRESS', 'WAITING_PARTS'].includes(newStatus);
+
+      if (allowFlexibleTransitions) {
         onStatusChange(draggedItem.id, newStatus);
+      } else {
+        // Transições padrão para casos normais
+        const validTransitions: Record<string, string[]> = {
+          PENDING: ['IN_PROGRESS', 'CANCELLED', 'COMPLETED'],
+          IN_PROGRESS: ['WAITING_PARTS', 'COMPLETED', 'CANCELLED', 'PENDING'],
+          WAITING_PARTS: ['IN_PROGRESS', 'CANCELLED', 'COMPLETED'],
+          COMPLETED: ['DELIVERED', 'IN_PROGRESS'],
+          DELIVERED: ['IN_PROGRESS'],
+          CANCELLED: ['PENDING', 'IN_PROGRESS'],
+        };
+
+        if (validTransitions[draggedItem.status]?.includes(newStatus)) {
+          onStatusChange(draggedItem.id, newStatus);
+        }
       }
     }
     

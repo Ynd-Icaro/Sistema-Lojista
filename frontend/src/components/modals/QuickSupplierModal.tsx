@@ -1,0 +1,196 @@
+'use client';
+
+import { useState, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Loader2, Truck } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { suppliersApi } from '@/lib/api';
+import { showApiError } from '@/lib/error-handler';
+import { useModalCache } from '@/hooks/useModalCache';
+
+const quickSupplierSchema = z.object({
+  name: z.string().min(2, 'Nome é obrigatório'),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  contactPerson: z.string().optional(),
+});
+
+type QuickSupplierForm = z.infer<typeof quickSupplierSchema>;
+
+interface QuickSupplierModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: (supplier: any) => void;
+}
+
+export function QuickSupplierModal({ isOpen, onClose, onSuccess }: QuickSupplierModalProps) {
+  const queryClient = useQueryClient();
+  const { loadCache, saveCache, clearCache } = useModalCache('quick-supplier');
+  
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<QuickSupplierForm>({
+    resolver: zodResolver(quickSupplierSchema),
+  });
+
+  const formData = watch();
+
+  // Load cache when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const cached = loadCache();
+      if (cached && cached.name) {
+        reset(cached);
+      }
+    }
+  }, [isOpen, loadCache, reset]);
+
+  // Save to cache on form change
+  useEffect(() => {
+    if (isOpen && formData.name) {
+      saveCache(formData);
+    }
+  }, [isOpen, formData, saveCache]);
+
+  const createMutation = useMutation({
+    mutationFn: (data: any) => suppliersApi.create(data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      toast.success('Fornecedor criado com sucesso!');
+      clearCache();
+      reset();
+      onClose();
+      if (onSuccess) {
+        onSuccess(response.data);
+      }
+    },
+    onError: (error: any) => {
+      showApiError(error, 'Erro ao criar fornecedor');
+    },
+  });
+
+  const onSubmit = (data: QuickSupplierForm) => {
+    createMutation.mutate(data);
+  };
+
+  const handleClose = () => {
+    // Don't clear cache on close - preserves data if clicked outside
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4"
+          onClick={handleClose}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden"
+          >
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                  <Truck className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  Novo Fornecedor
+                </h3>
+              </div>
+              <button
+                onClick={handleClose}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-4">
+              <div>
+                <label className="label">Nome *</label>
+                <input
+                  {...register('name')}
+                  className={`input ${errors.name ? 'input-error' : ''}`}
+                  placeholder="Nome do fornecedor"
+                  autoFocus
+                />
+                {errors.name && (
+                  <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="label">Email</label>
+                <input
+                  {...register('email')}
+                  type="email"
+                  className={`input ${errors.email ? 'input-error' : ''}`}
+                  placeholder="email@exemplo.com"
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="label">Telefone</label>
+                <input
+                  {...register('phone')}
+                  className={`input ${errors.phone ? 'input-error' : ''}`}
+                  placeholder="(11) 99999-9999"
+                />
+                {errors.phone && (
+                  <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="label">Pessoa de Contato</label>
+                <input
+                  {...register('contactPerson')}
+                  className={`input ${errors.contactPerson ? 'input-error' : ''}`}
+                  placeholder="Nome da pessoa de contato"
+                />
+                {errors.contactPerson && (
+                  <p className="text-red-500 text-sm mt-1">{errors.contactPerson.message}</p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <button type="button" onClick={handleClose} className="btn-secondary">
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  className="btn-primary"
+                >
+                  {createMutation.isPending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Criar Fornecedor'
+                  )}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

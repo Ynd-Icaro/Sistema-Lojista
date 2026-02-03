@@ -18,6 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { categoriesApi } from '@/lib/api';
+import { showApiError } from '@/lib/error-handler';
 import { ViewToggle, useViewMode } from '@/components/ui/ViewToggle';
 
 const categorySchema = z.object({
@@ -66,7 +67,7 @@ export default function CategoriasPage() {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao criar categoria');
+      showApiError(error, 'Erro ao criar categoria');
     },
   });
 
@@ -80,7 +81,7 @@ export default function CategoriasPage() {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar categoria');
+      showApiError(error, 'Erro ao atualizar categoria');
     },
   });
 
@@ -92,7 +93,7 @@ export default function CategoriasPage() {
       toast.success('Categoria excluída com sucesso!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao excluir categoria');
+      showApiError(error, 'Erro ao excluir categoria');
     },
   });
 

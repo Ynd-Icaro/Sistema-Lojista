@@ -27,6 +27,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { settingsApi, authApi } from '@/lib/api';
+import { showApiError } from '@/lib/error-handler';
 import { useAuthStore } from '@/store';
 
 // Tipos de módulos e ações
@@ -228,7 +229,7 @@ export default function ConfiguracoesPage() {
       toast.success('Dados da empresa atualizados!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar dados');
+      showApiError(error, 'Erro ao atualizar dados');
     },
   });
 
@@ -240,7 +241,7 @@ export default function ConfiguracoesPage() {
       toast.success('Configurações de notificação atualizadas!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar configurações');
+      showApiError(error, 'Erro ao atualizar configurações');
     },
   });
 
@@ -258,7 +259,7 @@ export default function ConfiguracoesPage() {
       });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar perfil');
+      showApiError(error, 'Erro ao atualizar perfil');
     },
   });
 
@@ -270,7 +271,7 @@ export default function ConfiguracoesPage() {
       toast.success('Permissões atualizadas!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar permissões');
+      showApiError(error, 'Erro ao atualizar permissões');
     },
   });
 
@@ -283,7 +284,7 @@ export default function ConfiguracoesPage() {
       toast.success('Permissões resetadas para o padrão!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao resetar permissões');
+      showApiError(error, 'Erro ao resetar permissões');
     },
   });
 
@@ -295,7 +296,7 @@ export default function ConfiguracoesPage() {
       toast.success('Configurações gerais atualizadas!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar configurações');
+      showApiError(error, 'Erro ao atualizar configurações');
     },
   });
 

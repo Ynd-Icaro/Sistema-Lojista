@@ -15,11 +15,11 @@ import { useModalCache } from '@/hooks/useModalCache';
 
 const quickProductSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
-  price: z.number().min(0.01, 'Preço é obrigatório'),
+  sku: z.string().min(1, 'SKU é obrigatório'),
+  price: z.number().min(0.01, 'Preço de venda é obrigatório'),
   stock: z.number().min(0).default(0),
   categoryId: z.string().optional(),
   barcode: z.string().optional(),
-  sku: z.string().optional(),
 });
 
 type QuickProductForm = z.infer<typeof quickProductSchema>;
@@ -104,7 +104,10 @@ export function QuickProductModal({
   const onSubmit = (data: QuickProductForm) => {
     createMutation.mutate({
       ...data,
+      salePrice: data.price, // Map price to salePrice
       isActive: true,
+      costPrice: 0, // Default cost price
+      minStock: 0, // Default min stock
     });
   };
 
@@ -164,6 +167,29 @@ export function QuickProductModal({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <label className="label">SKU *</label>
+                    <input
+                      {...register('sku')}
+                      className={`input ${errors.sku ? 'input-error' : ''}`}
+                      placeholder="Código interno único"
+                    />
+                    {errors.sku && (
+                      <p className="text-danger-500 text-sm mt-1">{errors.sku.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="label">Código de Barras</label>
+                    <input
+                      {...register('barcode')}
+                      className="input"
+                      placeholder="EAN/GTIN"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                     <label className="label">Preço de Venda *</label>
                     <input
                       type="number"
@@ -210,26 +236,6 @@ export function QuickProductModal({
                     >
                       <Plus className="w-5 h-5" />
                     </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Código de Barras</label>
-                    <input
-                      {...register('barcode')}
-                      className="input"
-                      placeholder="EAN/GTIN"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="label">SKU</label>
-                    <input
-                      {...register('sku')}
-                      className="input"
-                      placeholder="Código interno"
-                    />
                   </div>
                 </div>
 

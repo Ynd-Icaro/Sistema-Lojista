@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { invoicesApi, salesApi, serviceOrdersApi } from '@/lib/api';
+import { showApiError } from '@/lib/error-handler';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ViewToggle, useViewMode } from '@/components/ui/ViewToggle';
@@ -104,7 +105,7 @@ export default function NotasPage() {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao gerar documento');
+      showApiError(error, 'Erro ao gerar documento');
     },
   });
 
@@ -116,7 +117,7 @@ export default function NotasPage() {
       toast.success('E-mail enviado com sucesso!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao enviar e-mail');
+      showApiError(error, 'Erro ao enviar e-mail');
     },
   });
 
@@ -128,7 +129,7 @@ export default function NotasPage() {
       toast.success('WhatsApp enviado com sucesso!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao enviar WhatsApp');
+      showApiError(error, 'Erro ao enviar WhatsApp');
     },
   });
 
@@ -140,7 +141,7 @@ export default function NotasPage() {
       toast.success('Documento cancelado!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao cancelar documento');
+      showApiError(error, 'Erro ao cancelar documento');
     },
   });
 
@@ -152,7 +153,7 @@ export default function NotasPage() {
       toast.success('Documento excluído!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao excluir documento');
+      showApiError(error, 'Erro ao excluir documento');
     },
   });
 

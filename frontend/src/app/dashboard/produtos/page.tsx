@@ -33,10 +33,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { productsApi, categoriesApi } from '@/lib/api';
+import { productsApi, categoriesApi, suppliersApi } from '@/lib/api';
 import { formatCurrency, getStatusColor } from '@/lib/utils';
 import { showApiError } from '@/lib/error-handler';
 import { QuickCategoryModal } from '@/components/modals/QuickCategoryModal';
+import { QuickSupplierModal } from '@/components/modals/QuickSupplierModal';
 import { ViewToggle, useViewMode } from '@/components/ui/ViewToggle';
 
 const productSchema = z.object({
@@ -45,6 +46,7 @@ const productSchema = z.object({
   barcode: z.string().optional(),
   description: z.string().optional(),
   categoryId: z.string().optional(),
+  supplierId: z.string().optional(),
   costPrice: z.number().min(0, 'Preço de custo inválido'),
   salePrice: z.number().min(0.01, 'Preço de venda é obrigatório'),
   stock: z.number().min(0, 'Estoque inválido'),
@@ -61,6 +63,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -97,9 +100,15 @@ export default function ProductsPage() {
   });
 
   // Fetch categories for filter
-  const { data: categoriesData } = useQuery({
+  const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: () => categoriesApi.getAll().then((res) => res.data),
+  });
+
+  // Fetch suppliers for filter
+  const { data: suppliersData, isLoading: suppliersLoading } = useQuery({
+    queryKey: ['suppliers-simple'],
+    queryFn: () => suppliersApi.getSimpleList().then((res) => res.data),
   });
 
   const handleCategoryCreated = (category: any) => {
@@ -108,6 +117,15 @@ export default function ProductsPage() {
     // Seleciona a categoria recém-criada no formulário
     if (showModal) {
       setValue('categoryId', category.id);
+    }
+  };
+
+  const handleSupplierCreated = (supplier: any) => {
+    // Atualiza a lista de fornecedores
+    queryClient.invalidateQueries({ queryKey: ['suppliers-simple'] });
+    // Seleciona o fornecedor recém-criado no formulário
+    if (showModal) {
+      setValue('supplierId', supplier.id);
     }
   };
 
@@ -799,11 +817,37 @@ export default function ProductsPage() {
                           Nova categoria
                         </button>
                       </div>
-                      <select {...register('categoryId')} className="input">
-                        <option value="">Selecione...</option>
+                      <select {...register('categoryId')} className="input" disabled={categoriesLoading}>
+                        <option value="">
+                          {categoriesLoading ? 'Carregando...' : 'Selecione...'}
+                        </option>
                         {categoriesData?.map?.((cat: any) => (
                           <option key={cat.id} value={cat.id}>
                             {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="label mb-0">Fornecedor</label>
+                        <button
+                          type="button"
+                          onClick={() => setShowSupplierModal(true)}
+                          className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
+                        >
+                          <Truck className="w-3 h-3" />
+                          Novo fornecedor
+                        </button>
+                      </div>
+                      <select {...register('supplierId')} className="input" disabled={suppliersLoading}>
+                        <option value="">
+                          {suppliersLoading ? 'Carregando...' : 'Selecione...'}
+                        </option>
+                        {suppliersData?.map?.((sup: any) => (
+                          <option key={sup.id} value={sup.id}>
+                            {sup.name}
                           </option>
                         ))}
                       </select>
@@ -1068,6 +1112,20 @@ export default function ProductsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Quick Category Modal */}
+      <QuickCategoryModal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        onSuccess={handleCategoryCreated}
+      />
+
+      {/* Quick Supplier Modal */}
+      <QuickSupplierModal
+        isOpen={showSupplierModal}
+        onClose={() => setShowSupplierModal(false)}
+        onSuccess={handleSupplierCreated}
+      />
     </div>
   );
 }

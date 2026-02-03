@@ -36,6 +36,7 @@ import {
   Cell,
 } from 'recharts';
 import { financialApi } from '@/lib/api';
+import { showApiError } from '@/lib/error-handler';
 import { formatCurrency, formatDate, getStatusLabel, getStatusColor } from '@/lib/utils';
 import { QuickTransactionCategoryModal } from '@/components/modals/QuickTransactionCategoryModal';
 import { ViewToggle, useViewMode } from '@/components/ui/ViewToggle';
@@ -119,7 +120,7 @@ export default function FinanceiroPage() {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao criar transação');
+      showApiError(error, 'Erro ao criar transação');
     },
   });
 
@@ -132,7 +133,7 @@ export default function FinanceiroPage() {
       toast.success('Pagamento confirmado!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao confirmar pagamento');
+      showApiError(error, 'Erro ao confirmar pagamento');
     },
   });
 

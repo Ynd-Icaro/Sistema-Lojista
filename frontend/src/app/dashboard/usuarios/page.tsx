@@ -30,6 +30,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { usersApi, invitationsApi } from '@/lib/api';
+import { showApiError } from '@/lib/error-handler';
 import { formatDateTime } from '@/lib/utils';
 import { ViewToggle, useViewMode } from '@/components/ui/ViewToggle';
 
@@ -135,7 +136,7 @@ export default function UsuariosPage() {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao criar usuário');
+      showApiError(error, 'Erro ao criar usuário');
     },
   });
 
@@ -149,7 +150,7 @@ export default function UsuariosPage() {
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar usuário');
+      showApiError(error, 'Erro ao atualizar usuário');
     },
   });
 
@@ -161,7 +162,7 @@ export default function UsuariosPage() {
       toast.success('Usuário excluído!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao excluir usuário');
+      showApiError(error, 'Erro ao excluir usuário');
     },
   });
 
@@ -174,7 +175,7 @@ export default function UsuariosPage() {
       toast.success('Status atualizado!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar status');
+      showApiError(error, 'Erro ao atualizar status');
     },
   });
 
@@ -187,7 +188,7 @@ export default function UsuariosPage() {
       toast.success('Convite criado com sucesso!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao criar convite');
+      showApiError(error, 'Erro ao criar convite');
     },
   });
 
@@ -199,7 +200,7 @@ export default function UsuariosPage() {
       toast.success('Convite cancelado!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao cancelar convite');
+      showApiError(error, 'Erro ao cancelar convite');
     },
   });
 
@@ -212,7 +213,7 @@ export default function UsuariosPage() {
       toast.success('Convite reenviado!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Erro ao reenviar convite');
+      showApiError(error, 'Erro ao reenviar convite');
     },
   });
 

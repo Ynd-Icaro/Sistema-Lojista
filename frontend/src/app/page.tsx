@@ -9,17 +9,11 @@ import {
   ShoppingCart,
   Package,
   Users,
-  FileText,
   TrendingUp,
-  Bell,
-  Smartphone,
-  Mail,
   CheckCircle2,
   ArrowRight,
   Zap,
   Shield,
-  BarChart3,
-  Settings,
   Star,
   Play,
   ChevronRight,
@@ -33,7 +27,6 @@ import {
   MessageCircle,
   Phone,
   Wrench,
-  CreditCard,
   PieChart,
   MousePointer,
 } from 'lucide-react';
@@ -108,11 +101,6 @@ const staggerContainer = {
 const fadeInUp = {
   initial: { opacity: 0, y: 30 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
-};
-
-const scaleIn = {
-  initial: { opacity: 0, scale: 0.8 },
-  animate: { opacity: 1, scale: 1, transition: { duration: 0.5 } }
 };
 
 const features = [
@@ -260,7 +248,6 @@ export default function LandingPage() {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const { scrollYProgress } = useScroll();
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
   
   // GSAP refs
   const heroRef = useRef<HTMLDivElement>(null);
@@ -567,7 +554,7 @@ export default function LandingPage() {
                   <span className="ml-4 text-sm text-slate-500">dashboard.smartflux.com.br</span>
                 </div>
                 <div className="p-6">
-                  <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                     {[
                       { label: 'Vendas', value: 'R$ 12.4k', icon: DollarSign, color: 'text-success-400', bg: 'bg-success-500/10' },
                       { label: 'Produtos', value: '1.234', icon: Package, color: 'text-primary-400', bg: 'bg-primary-500/10' },
@@ -904,11 +891,7 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className={`relative rounded-2xl p-6 border ${
-                  plan.highlighted
-                    ? 'bg-gradient-to-b from-primary-900/50 to-slate-900 border-primary-500/50 scale-105'
-                    : 'bg-slate-900/50 border-slate-800'
-                }`}
+                className={`relative rounded-2xl p-6 border ${plan.highlighted ? 'bg-gradient-to-b from-primary-900/50 to-slate-900 border-primary-500/50 scale-105' : 'bg-slate-900/50 border-slate-800'}`}
               >
                 {plan.highlighted && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full text-white text-sm font-medium">
@@ -933,11 +916,7 @@ export default function LandingPage() {
                 </ul>
                 <Link
                   href="/register"
-                  className={`block text-center py-3 px-6 rounded-xl font-semibold transition-all ${
-                    plan.highlighted
-                      ? 'bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-500 hover:to-secondary-500 text-white shadow-lg shadow-primary-500/25'
-                      : 'bg-slate-800 hover:bg-slate-700 text-white'
-                  }`}
+                  className={`block text-center py-3 px-6 rounded-xl font-semibold transition-all ${plan.highlighted ? 'bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-500 hover:to-secondary-500 text-white shadow-lg shadow-primary-500/25' : 'bg-slate-800 hover:bg-slate-700 text-white'}`}
                 >
                   {plan.cta}
                 </Link>
@@ -1031,7 +1010,7 @@ export default function LandingPage() {
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                   <a
-                    href="https://wa.me/5548999999999"
+                    href="https://wa.me/5548988500203"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full sm:w-auto flex items-center justify-center gap-2 border border-white/30 text-white hover:bg-white/10 px-8 py-4 rounded-xl font-semibold transition-all"

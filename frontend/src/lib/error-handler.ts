@@ -34,8 +34,46 @@ export function getErrorMessage(error: any, fallbackMessage = 'Ocorreu um erro i
 
 /**
  * Exibe toast de erro com detalhes da API
+ * Melhorado para mostrar campos obrigatórios faltantes
  */
 export function showApiError(error: any, fallbackMessage = 'Ocorreu um erro inesperado') {
+  const data = error?.response?.data as ApiError | undefined;
+
+  if (data?.errors && data.errors.length > 0) {
+    // Verifica se são erros de campos obrigatórios
+    const requiredFieldErrors = data.errors.filter(e =>
+      e.message.toLowerCase().includes('obrigatório') ||
+      e.message.toLowerCase().includes('required') ||
+      e.message.toLowerCase().includes('não pode ser vazio')
+    );
+
+    if (requiredFieldErrors.length > 0) {
+      // Mostra campos obrigatórios faltantes
+      const fieldNames = requiredFieldErrors.map(e => {
+        // Tenta extrair o nome do campo da mensagem
+        const fieldMatch = e.message.match(/([A-Za-zÀ-ÿ\s]+).*obrigatório/i);
+        return fieldMatch ? fieldMatch[1].trim() : e.field;
+      });
+
+      const fieldsList = fieldNames.join(', ');
+      toast.error(`Campos obrigatórios faltando: ${fieldsList}`, {
+        duration: 5000,
+        style: { maxWidth: '500px' }
+      });
+      return;
+    }
+
+    // Para outros tipos de erro de campo
+    if (data.errors.length === 1) {
+      toast.error(data.errors[0].message);
+    } else {
+      const messages = data.errors.map(e => `• ${e.message}`).join('\n');
+      toast.error(`Corrija os seguintes erros:\n${messages}`, { duration: 6000 });
+    }
+    return;
+  }
+
+  // Fallback para mensagens gerais
   const message = getErrorMessage(error, fallbackMessage);
   toast.error(message);
 }
