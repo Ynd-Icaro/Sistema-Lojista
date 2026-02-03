@@ -184,16 +184,26 @@ export default function PDVPage() {
       <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         {/* Search bar */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              value={searchProduct}
-              onChange={(e) => setSearchProduct(e.target.value)}
-              placeholder="Buscar produto por nome, SKU ou código de barras..."
-              className="input pl-10"
-              autoFocus
-            />
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchProduct}
+                onChange={(e) => setSearchProduct(e.target.value)}
+                placeholder="Buscar produto..."
+                className="input pl-9 pr-3 py-2 text-sm"
+                autoFocus
+              />
+            </div>
+            <button
+              onClick={() => setShowQuickProductModal(true)}
+              className="btn-primary flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap"
+              title="Cadastrar produto rápido"
+            >
+              <Plus className="w-4 h-4" />
+              Produto
+            </button>
           </div>
         </div>
 
@@ -247,14 +257,7 @@ export default function PDVPage() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-slate-500 dark:text-slate-400">
               <Package className="w-16 h-16 mb-4 opacity-50" />
-              <p className="mb-4">Nenhum produto encontrado</p>
-              <button
-                onClick={() => setShowQuickProductModal(true)}
-                className="btn-primary"
-              >
-                <Plus className="w-5 h-5" />
-                Cadastrar Produto
-              </button>
+              <p>Nenhum produto encontrado</p>
             </div>
           )}
         </div>
