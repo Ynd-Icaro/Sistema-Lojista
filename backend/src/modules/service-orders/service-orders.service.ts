@@ -76,6 +76,24 @@ export class ServiceOrdersService {
     };
   }
 
+  async getOverdueCount(tenantId: string) {
+    const now = new Date();
+    
+    const overdueCount = await this.prisma.serviceOrder.count({
+      where: {
+        tenantId,
+        estimatedDate: {
+          lt: now,
+        },
+        status: {
+          notIn: ['COMPLETED', 'DELIVERED', 'CANCELLED'],
+        },
+      },
+    });
+
+    return { count: overdueCount };
+  }
+
   async findOne(id: string, tenantId: string) {
     const order = await this.prisma.serviceOrder.findFirst({
       where: { id, tenantId },

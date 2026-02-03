@@ -24,6 +24,12 @@ export class ServiceOrdersController {
     return this.serviceOrdersService.getStats(tenantId);
   }
 
+  @Get('overdue-count')
+  @ApiOperation({ summary: 'Contar ordens de serviço em atraso' })
+  getOverdueCount(@CurrentUser('tenantId') tenantId: string) {
+    return this.serviceOrdersService.getOverdueCount(tenantId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Buscar ordem de serviço por ID' })
   findOne(@Param('id') id: string, @CurrentUser('tenantId') tenantId: string) {
