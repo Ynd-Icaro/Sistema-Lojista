@@ -1,0 +1,13 @@
+/node_modules
+/dist
+/.env
+/.cache
+/build
+/.next
+/.vercel
+/turbo
+.DS_Store
+.vscode/
+.idea/
+*.local
+*.log
