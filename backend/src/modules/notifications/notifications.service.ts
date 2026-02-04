@@ -632,6 +632,113 @@ export class NotificationsService {
     `;
   }
 
+  async sendLowStockAlert(tenantId: string, lowStockProducts: any[]) {
+    if (lowStockProducts.length === 0) return;
+
+    // Get tenant settings
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    const settings = (tenant?.settings as any) || {};
+    const emailForNotifications = settings?.company?.email || tenant?.email;
+
+    if (!emailForNotifications) return;
+
+    const subject = `🚨 Alerta de Estoque Baixo - ${lowStockProducts.length} produto(s)`;
+    const html = this.generateLowStockAlertEmailHtml(lowStockProducts);
+
+    try {
+      await this.emailService.send({
+        to: emailForNotifications,
+        subject,
+        html,
+      });
+
+      // Log notification
+      await this.prisma.notificationLog.create({
+        data: {
+          tenantId,
+          type: 'EMAIL',
+          status: 'SENT',
+          recipient: emailForNotifications,
+          subject,
+          content: `Alerta de estoque baixo para ${lowStockProducts.length} produtos`,
+          sentAt: new Date(),
+          metadata: { 
+            lowStockProducts: lowStockProducts.map(p => ({ id: p.id, name: p.name, stock: p.stock, minStock: p.minStock })) 
+          },
+        },
+      });
+
+      return { success: true, message: 'Alerta de estoque enviado com sucesso' };
+    } catch (error) {
+      console.error('Low stock alert email error:', error);
+      return { success: false, message: 'Falha ao enviar alerta de estoque' };
+    }
+  }
+
+  private generateLowStockAlertEmailHtml(products: any[]): string {
+    const productRows = products.map(product => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #eee;">${product.sku || 'N/A'}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #eee;">${product.name}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #e53e3e; font-weight: bold;">${product.stock}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${product.minStock}</td>
+      </tr>
+    `).join('');
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Alerta de Estoque Baixo</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4;">
+  <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <div style="background: linear-gradient(135deg, #e53e3e, #c53030); color: white; padding: 30px; text-align: center;">
+      <h1 style="margin: 0; font-size: 24px;">🚨 Alerta de Estoque Baixo</h1>
+      <p style="margin: 10px 0 0 0; opacity: 0.9;">Produtos com estoque crítico detectados</p>
+    </div>
+
+    <div style="padding: 30px;">
+      <p>Olá,</p>
+      <p>Detectamos <strong>${products.length} produto(s)</strong> com estoque abaixo do nível mínimo configurado:</p>
+
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #f9f9f9; border-radius: 8px; overflow: hidden;">
+        <thead>
+          <tr style="background: #e53e3e; color: white;">
+            <th style="padding: 12px; text-align: left;">SKU</th>
+            <th style="padding: 12px; text-align: left;">Produto</th>
+            <th style="padding: 12px; text-align: center;">Estoque Atual</th>
+            <th style="padding: 12px; text-align: center;">Estoque Mínimo</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${productRows}
+        </tbody>
+      </table>
+
+      <p style="color: #e53e3e; font-weight: bold;">⚠️ Ação recomendada: Reabasteça estes produtos o mais breve possível para evitar rupturas de estoque.</p>
+
+      <div style="background: #f0f9ff; border-left: 4px solid #3182ce; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #2c5282;"><strong>Dica:</strong> Você pode ajustar os níveis de estoque mínimo nas configurações do produto ou configurar alertas automáticos mais frequentes.</p>
+      </div>
+
+      <p>Atenciosamente,<br>
+      <strong>SmartFlux ERP</strong></p>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 12px;">
+      <p>Este é um email automático do sistema SmartFlux ERP. Não responda este email.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+  }
+
   private getStatusEmoji(status: string): string {
     const emojis: Record<string, string> = {
       CREATED: '🔧',

@@ -221,6 +221,14 @@ export const productsApi = {
   approveImport: (id: string) => api.put(`/products/${id}/approve-import`),
   // Variations
   getWithVariations: (id: string) => api.get(`/products/${id}/variations`),
+  createVariation: (parentProductId: string, data: any) => 
+    api.post(`/products/${parentProductId}/variations`, data),
+  getVariations: (parentProductId: string) => 
+    api.get(`/products/${parentProductId}/variations/list`),
+  updateVariation: (variationId: string, data: any) => 
+    api.put(`/products/variation/${variationId}`, data),
+  deleteVariation: (variationId: string) => 
+    api.delete(`/products/variation/${variationId}`),
   linkVariations: (parentProductId: string, variationIds: string[]) =>
     api.post('/products/variations/link', { parentProductId, variationIds }),
   unlinkVariations: (variationIds: string[]) =>

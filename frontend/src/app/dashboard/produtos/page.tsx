@@ -28,6 +28,7 @@ import {
   DollarSign,
   Boxes,
   Truck,
+  Tag,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -560,6 +561,13 @@ export default function ProductsPage() {
                     <td className="table-cell">
                       <div className="flex items-center justify-end gap-2">
                         <Link
+                          href={`/dashboard/produtos/${product.id}/variacoes`}
+                          className="p-2 text-slate-600 hover:text-purple-600 hover:bg-purple-50 dark:text-slate-400 dark:hover:text-purple-400 dark:hover:bg-purple-900/20 rounded-lg"
+                          title="Gerenciar variações"
+                        >
+                          <Tag className="w-4 h-4" />
+                        </Link>
+                        <Link
                           href={`/dashboard/produtos/novo?id=${product.id}`}
                           className="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 dark:text-slate-400 dark:hover:text-primary-400 dark:hover:bg-primary-900/20 rounded-lg"
                         >
@@ -680,6 +688,13 @@ export default function ProductsPage() {
                     {product.isActive ? 'Ativo' : 'Inativo'}
                   </span>
                   <div className="flex items-center gap-1">
+                    <Link
+                      href={`/dashboard/produtos/${product.id}/variacoes`}
+                      className="p-2 text-slate-600 hover:text-purple-600 hover:bg-purple-50 dark:text-slate-400 dark:hover:text-purple-400 dark:hover:bg-purple-900/20 rounded-lg"
+                      title="Gerenciar variações"
+                    >
+                      <Tag className="w-4 h-4" />
+                    </Link>
                     <Link
                       href={`/dashboard/produtos/novo?id=${product.id}`}
                       className="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 dark:text-slate-400 dark:hover:text-primary-400 dark:hover:bg-primary-900/20 rounded-lg"

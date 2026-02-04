@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { CustomersService } from '../customers/customers.service';
 import { ProductsService } from '../products/products.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateSaleDto, SaleQueryDto } from './dto/sale.dto';
 import { PaymentMethod, PaymentMethodType, TransactionStatus, TransactionStatusType } from '../../types';
 
@@ -11,6 +12,7 @@ export class SalesService {
     private prisma: PrismaService,
     private customersService: CustomersService,
     private productsService: ProductsService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async findAll(tenantId: string, query: SaleQueryDto) {
@@ -256,6 +258,11 @@ export class SalesService {
     }, {
       maxWait: 10000, // 10 seconds max wait for transaction
       timeout: 30000, // 30 seconds timeout for the entire transaction
+    });
+
+    // Send sale confirmation email (don't block the response)
+    this.notificationsService.sendSaleConfirmation(tenantId, sale).catch(error => {
+      console.error('Failed to send sale confirmation email:', error);
     });
 
     return sale;

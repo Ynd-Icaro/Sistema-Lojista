@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateProductDto, UpdateProductDto, ProductQueryDto } from './dto/product.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async findAll(tenantId: string, query: ProductQueryDto) {
     const { page = 1, limit = 20, search, categoryId, isActive, lowStock } = query;
@@ -308,6 +312,14 @@ export class ProductsService {
       }),
     ]);
 
+    // Check for low stock alert after stock update
+    if (newStock <= product.minStock && newStock > 0) {
+      // Send low stock alert (don't block the response)
+      this.notificationsService.sendLowStockAlert(tenantId, [product]).catch(error => {
+        console.error('Failed to send low stock alert:', error);
+      });
+    }
+
     return { previousStock, newStock, quantity, type };
   }
 
@@ -434,5 +446,188 @@ export class ProductsService {
         totalRevenue: tp._sum.total,
       };
     });
+  }
+
+  async createVariation(parentProductId: string, tenantId: string, dto: CreateVariationDto) {
+    return this.createVariations(parentProductId, tenantId, [dto]);
+  }
+    const parentProduct = await this.findOne(parentProductId, tenantId);
+    
+    if (!parentProduct) {
+      throw new NotFoundException('Produto pai não encontrado');
+    }
+
+    const createdVariations: any[] = [];
+
+    for (const variationData of variations) {
+      // Gerar SKU único para a variação
+      const baseSku = parentProduct.sku;
+      const variationSuffix = this.generateVariationSuffix(variationData);
+      const sku = `${baseSku}-${variationSuffix}`;
+
+      // Verificar se SKU já existe
+      const existingSku = await this.findBySku(sku, tenantId);
+      if (existingSku) {
+        throw new BadRequestException(`SKU ${sku} já existe`);
+      }
+
+      // Criar nome da variação
+      const variationName = this.generateVariationName(parentProduct.name, variationData);
+
+      const variation = await this.prisma.product.create({
+        data: {
+          tenantId,
+          parentProductId,
+          sku,
+          name: variationName,
+          description: parentProduct.description,
+          shortDescription: parentProduct.shortDescription,
+          categoryId: parentProduct.categoryId,
+          supplierId: parentProduct.supplierId,
+          brand: parentProduct.brand,
+          model: parentProduct.model,
+          color: variationData.color || parentProduct.color,
+          size: variationData.size || parentProduct.size,
+          material: parentProduct.material,
+          gender: parentProduct.gender,
+          ageGroup: parentProduct.ageGroup,
+          season: parentProduct.season,
+          style: parentProduct.style,
+          origin: parentProduct.origin,
+          ncm: parentProduct.ncm,
+          cest: parentProduct.cest,
+          cfop: parentProduct.cfop,
+          csosn: parentProduct.csosn,
+          cstIcms: parentProduct.cstIcms,
+          cstPis: parentProduct.cstPis,
+          cstCofins: parentProduct.cstCofins,
+          icmsRate: parentProduct.icmsRate,
+          ipiRate: parentProduct.ipiRate,
+          pisRate: parentProduct.pisRate,
+          cofinsRate: parentProduct.cofinsRate,
+          costPrice: variationData.costPrice || parentProduct.costPrice,
+          salePrice: variationData.salePrice || parentProduct.salePrice,
+          promoPrice: parentProduct.promoPrice,
+          promoStartDate: parentProduct.promoStartDate,
+          promoEndDate: parentProduct.promoEndDate,
+          wholesalePrice: parentProduct.wholesalePrice,
+          wholesaleMinQty: parentProduct.wholesaleMinQty,
+          profitMargin: parentProduct.profitMargin,
+          stock: variationData.stock || 0,
+          minStock: parentProduct.minStock,
+          maxStock: parentProduct.maxStock,
+          unit: parentProduct.unit,
+          packQuantity: parentProduct.packQuantity,
+          weight: parentProduct.weight,
+          grossWeight: parentProduct.grossWeight,
+          width: parentProduct.width,
+          height: parentProduct.height,
+          depth: parentProduct.depth,
+          images: variationData.images || parentProduct.images,
+          mainImage: variationData.images?.[0] || parentProduct.mainImage,
+          tags: parentProduct.tags || [],
+          isVariation: true,
+          isMainProduct: false,
+          isActive: true,
+          warrantyMonths: parentProduct.warrantyMonths,
+        },
+      });
+
+      // Criar movimento de estoque inicial se stock > 0
+      if (variation.stock && variation.stock > 0) {
+        await this.prisma.stockMovement.create({
+          data: {
+            tenantId,
+            productId: variation.id,
+            type: 'IN',
+            quantity: variation.stock,
+            reason: 'Estoque inicial - Variação',
+            previousStock: 0,
+            newStock: variation.stock,
+          },
+        });
+      }
+
+      createdVariations.push(variation);
+    }
+
+    // Atualizar produto pai para marcar como produto principal
+    await this.prisma.product.update({
+      where: { id: parentProductId },
+      data: { 
+        isMainProduct: true,
+        variationAttributes: variations[0] ? Object.keys(variations[0]).filter(key => 
+          ['color', 'size'].includes(key) && variations[0][key]
+        ) : []
+      },
+    });
+
+    return createdVariations;
+  }
+
+  async getVariations(parentProductId: string, tenantId: string) {
+    return this.prisma.product.findMany({
+      where: {
+        tenantId,
+        parentProductId,
+        isVariation: true,
+      },
+      include: {
+        category: {
+          select: { id: true, name: true, color: true },
+        },
+        _count: {
+          select: { stockMovements: true },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async updateVariation(id: string, tenantId: string, dto: any) {
+    const variation = await this.findOne(id, tenantId);
+    
+    if (!variation.isVariation) {
+      throw new BadRequestException('Este produto não é uma variação');
+    }
+
+    return this.update(id, tenantId, dto);
+  }
+
+  async deleteVariation(id: string, tenantId: string) {
+    const variation = await this.findOne(id, tenantId);
+    
+    if (!variation.isVariation) {
+      throw new BadRequestException('Este produto não é uma variação');
+    }
+
+    // Verificar se tem vendas
+    const salesCount = await this.prisma.saleItem.count({
+      where: { productId: id },
+    });
+
+    if (salesCount > 0) {
+      throw new BadRequestException('Não é possível excluir variação com vendas registradas');
+    }
+
+    await this.prisma.product.delete({
+      where: { id },
+    });
+
+    return { message: 'Variação excluída com sucesso' };
+  }
+
+  private generateVariationSuffix(variationData: any): string {
+    const parts: string[] = [];
+    if (variationData.color) parts.push(variationData.color.toLowerCase().replace(/\s+/g, ''));
+    if (variationData.size) parts.push(variationData.size.toLowerCase().replace(/\s+/g, ''));
+    return parts.join('-') || 'var';
+  }
+
+  private generateVariationName(baseName: string, variationData: any): string {
+    const parts: string[] = [];
+    if (variationData.color) parts.push(variationData.color);
+    if (variationData.size) parts.push(variationData.size);
+    return parts.join(' - ');
   }
 }

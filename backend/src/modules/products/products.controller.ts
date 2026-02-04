@@ -4,7 +4,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { ProductsService } from './products.service';
 import { ProductImportExportService } from './services/import-export.service';
-import { CreateProductDto, UpdateProductDto, ProductQueryDto, UpdateStockDto } from './dto/product.dto';
+import { CreateProductDto, UpdateProductDto, ProductQueryDto, UpdateStockDto, CreateVariationDto } from './dto/product.dto';
 import { ImportProductsDto, ExportProductsDto, LinkVariationDto, UnlinkVariationDto } from './dto/import-export.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -187,6 +187,41 @@ export class ProductsController {
   @ApiOperation({ summary: 'Buscar produto com suas variações' })
   getProductWithVariations(@Param('id') id: string, @CurrentUser('tenantId') tenantId: string) {
     return this.importExportService.getProductWithVariations(tenantId, id);
+  }
+
+  @Post(':id/variations')
+  @ApiOperation({ summary: 'Criar variação para um produto' })
+  createVariation(
+    @Param('id') id: string,
+    @CurrentUser('tenantId') tenantId: string,
+    @Body() dto: CreateVariationDto,
+  ) {
+    return this.productsService.createVariation(id, tenantId, dto);
+  }
+
+  @Get(':id/variations/list')
+  @ApiOperation({ summary: 'Listar variações de um produto' })
+  getVariations(@Param('id') id: string, @CurrentUser('tenantId') tenantId: string) {
+    return this.productsService.getVariations(id, tenantId);
+  }
+
+  @Put('variation/:variationId')
+  @ApiOperation({ summary: 'Atualizar variação' })
+  updateVariation(
+    @Param('variationId') variationId: string,
+    @CurrentUser('tenantId') tenantId: string,
+    @Body() dto: UpdateProductDto,
+  ) {
+    return this.productsService.updateVariation(variationId, tenantId, dto);
+  }
+
+  @Delete('variation/:variationId')
+  @ApiOperation({ summary: 'Remover variação' })
+  deleteVariation(
+    @Param('variationId') variationId: string,
+    @CurrentUser('tenantId') tenantId: string,
+  ) {
+    return this.productsService.deleteVariation(variationId, tenantId);
   }
 
   @Delete(':id')
