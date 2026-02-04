@@ -38,12 +38,25 @@ export default function LoginPage() {
       setIsLoading(true);
       const response = await authApi.login(data.email, data.password);
       const { accessToken, refreshToken, user } = response.data;
-      
+
       setAuth(user, accessToken, refreshToken);
-      toast.success('Login realizado com sucesso!');
-      router.push('/dashboard');
+      toast.success(`Bem-vindo, ${user.name}!`);
+      router.replace('/dashboard');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao fazer login');
+      const errorMessage = error.response?.data?.message;
+
+      // Tratamento específico de erros comuns
+      if (error.response?.status === 401) {
+        toast.error('Email ou senha incorretos');
+      } else if (error.response?.status === 429) {
+        toast.error('Muitas tentativas. Tente novamente em alguns minutos');
+      } else if (error.response?.status === 500) {
+        toast.error('Erro interno do servidor. Tente novamente');
+      } else if (!navigator.onLine) {
+        toast.error('Sem conexão com a internet');
+      } else {
+        toast.error(errorMessage || 'Erro ao fazer login. Tente novamente');
+      }
     } finally {
       setIsLoading(false);
     }

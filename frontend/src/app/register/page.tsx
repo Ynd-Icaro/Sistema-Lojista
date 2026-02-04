@@ -66,18 +66,48 @@ export default function RegisterPage() {
         password: data.password,
       });
       const { accessToken, refreshToken, user } = response.data;
-      
-      setAuth(user, accessToken, refreshToken);
-      toast.success('Conta criada com sucesso! Bem-vindo ao SmartFlux ERP.');
-      router.push('/dashboard');
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Erro ao criar conta. Tente novamente.';
 
-      // Tentar identificar o campo específico do erro
-      if (errorMessage.includes('email')) {
-        setError('email', { message: errorMessage });
-      } else if (errorMessage.includes('nome') && errorMessage.includes('empresa')) {
-        setError('tenantName', { message: errorMessage });
+      setAuth(user, accessToken, refreshToken);
+      toast.success(`Conta criada com sucesso! Bem-vindo, ${user.name}!`);
+      router.replace('/dashboard');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message;
+
+      // Tratamento específico de erros comuns
+      if (error.response?.status === 409) {
+        if (errorMessage?.includes('email')) {
+          setError('email', { message: 'Este email já está cadastrado' });
+        } else if (errorMessage?.includes('empresa') || errorMessage?.includes('tenant')) {
+          setError('tenantName', { message: 'Nome da empresa já está em uso' });
+        } else {
+          toast.error('Usuário ou empresa já existe');
+        }
+      } else if (error.response?.status === 400) {
+        // Tentar identificar campos específicos
+        if (errorMessage?.includes('email')) {
+          setError('email', { message: 'Email inválido ou já cadastrado' });
+        } else if (errorMessage?.includes('senha') || errorMessage?.includes('password')) {
+          setError('password', { message: 'Senha não atende aos requisitos' });
+        } else if (errorMessage?.includes('nome') && errorMessage?.includes('empresa')) {
+          setError('tenantName', { message: 'Nome da empresa é obrigatório' });
+        } else if (errorMessage?.includes('nome')) {
+          setError('name', { message: 'Nome é obrigatório' });
+        } else {
+          toast.error(errorMessage || 'Dados inválidos. Verifique os campos');
+        }
+      } else if (error.response?.status === 429) {
+        toast.error('Muitas tentativas. Tente novamente em alguns minutos');
+      } else if (error.response?.status === 500) {
+        toast.error('Erro interno do servidor. Tente novamente');
+      } else if (!navigator.onLine) {
+        toast.error('Sem conexão com a internet');
+      } else {
+        toast.error(errorMessage || 'Erro ao criar conta. Tente novamente');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
       } else if (errorMessage.includes('nome') && !errorMessage.includes('empresa')) {
         setError('name', { message: errorMessage });
       } else if (errorMessage.includes('senha')) {

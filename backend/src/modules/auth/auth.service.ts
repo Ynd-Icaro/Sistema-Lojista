@@ -15,7 +15,20 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string, tenantId?: string) {
-    const whereClause: any = { email };
+    // Validações básicas
+    if (!email || !email.trim()) {
+      throw new BadRequestException('Email é obrigatório');
+    }
+
+    if (!password) {
+      throw new BadRequestException('Senha é obrigatória');
+    }
+
+    const whereClause: any = {
+      email: email.toLowerCase().trim(),
+      status: 'ACTIVE'
+    };
+
     if (tenantId) {
       whereClause.tenantId = tenantId;
     }
@@ -28,16 +41,17 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new UnauthorizedException('Email ou senha incorretos');
     }
 
-    if (user.status !== 'ACTIVE') {
-      throw new UnauthorizedException('Usuário inativo ou suspenso');
+    // Verificar se a senha foi fornecida
+    if (!user.password) {
+      throw new UnauthorizedException('Conta não configurada corretamente');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new UnauthorizedException('Email ou senha incorretos');
     }
 
     const { password: _, refreshToken: __, ...result } = user;
@@ -74,7 +88,7 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    // Validações básicas
+    // Validações básicas dos campos obrigatórios
     if (!dto.email || !dto.email.trim()) {
       throw new BadRequestException('O campo email é obrigatório');
     }
@@ -87,6 +101,31 @@ export class AuthService {
       throw new BadRequestException('O campo nome é obrigatório');
     }
 
+    // Validar formato do email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(dto.email)) {
+      throw new BadRequestException('Formato de email inválido');
+    }
+
+    // Validar força da senha
+    if (dto.password.length < 8) {
+      throw new BadRequestException('A senha deve ter no mínimo 8 caracteres');
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+    if (!passwordRegex.test(dto.password)) {
+      throw new BadRequestException('A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número');
+    }
+
+    // Verificar se email já existe
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase().trim() },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('Este email já está cadastrado');
+    }
+
     let tenantId = dto.tenantId;
 
     // Se tenantName for fornecido, criar novo tenant
@@ -95,33 +134,42 @@ export class AuthService {
         throw new BadRequestException('O nome da empresa deve ter no mínimo 3 caracteres');
       }
 
+      if (dto.tenantName.trim().length > 100) {
+        throw new BadRequestException('O nome da empresa deve ter no máximo 100 caracteres');
+      }
+
       // Criar slug único para o tenant
-      const slug = dto.tenantName
+      const baseSlug = dto.tenantName
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
-      // Verificar se slug já existe
-      const existingTenant = await this.prisma.tenant.findUnique({
-        where: { slug },
-      });
+      let slug = baseSlug;
+      let counter = 1;
 
-      if (existingTenant) {
-        throw new BadRequestException('Já existe uma empresa com este nome. Escolha um nome diferente.');
+      // Garantir slug único
+      while (await this.prisma.tenant.findUnique({ where: { slug } })) {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
       }
 
       // Criar novo tenant
       const newTenant = await this.prisma.tenant.create({
         data: {
           name: dto.tenantName.trim(),
-          slug: `${slug}-${Date.now()}`,
+          slug,
           isActive: true,
           settings: {
             primaryColor: '#3B82F6',
             secondaryColor: '#1E40AF',
             plan: 'FREE',
+            invoicePrefix: 'NF',
+            invoiceNextNumber: 1,
+            warrantyDays: 90,
+            loyaltyPointsValue: 0.1,
+            loyaltyPointsPerReal: 1,
           },
         },
       });
@@ -134,6 +182,19 @@ export class AuthService {
 
     if (!tenantId) {
       throw new BadRequestException('É necessário informar o ID da empresa ou nome para criar uma nova empresa');
+    }
+
+    // Verificar se tenant existe
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!tenant) {
+      throw new BadRequestException('Empresa não encontrada');
+    }
+
+    if (!tenant.isActive) {
+      throw new BadRequestException('Esta empresa está inativa');
     }
 
     // Check if tenant exists (para caso tenantId seja fornecido diretamente)
@@ -403,24 +464,51 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto) {
+    // Validações básicas
+    if (!dto.email || !dto.email.trim()) {
+      throw new BadRequestException('Email é obrigatório');
+    }
+
+    if (!dto.code || !dto.code.trim()) {
+      throw new BadRequestException('Código de verificação é obrigatório');
+    }
+
+    if (!dto.newPassword || dto.newPassword.length < 8) {
+      throw new BadRequestException('A nova senha deve ter no mínimo 8 caracteres');
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+    if (!passwordRegex.test(dto.newPassword)) {
+      throw new BadRequestException('A nova senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número');
+    }
+
     const user = await this.prisma.user.findFirst({
-      where: { email: dto.email },
+      where: {
+        email: dto.email.toLowerCase().trim(),
+        status: 'ACTIVE'
+      },
     });
 
     if (!user) {
-      throw new BadRequestException('Email não encontrado');
+      throw new BadRequestException('Usuário não encontrado');
     }
 
     if (!user.resetCode || !user.resetCodeExpiresAt) {
       throw new BadRequestException('Código de verificação não encontrado. Solicite um novo código.');
     }
 
-    if (user.resetCode !== dto.code) {
+    if (user.resetCode !== dto.code.trim()) {
       throw new BadRequestException('Código de verificação inválido');
     }
 
     if (new Date() > user.resetCodeExpiresAt) {
       throw new BadRequestException('Código de verificação expirado. Solicite um novo código.');
+    }
+
+    // Verificar se a nova senha é diferente da atual
+    const isSamePassword = await bcrypt.compare(dto.newPassword, user.password);
+    if (isSamePassword) {
+      throw new BadRequestException('A nova senha deve ser diferente da senha atual');
     }
 
     // Hash new password

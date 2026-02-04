@@ -6,6 +6,8 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 segundos timeout
+  withCredentials: true, // Importante para cookies
 });
 
 // Configuração de cookies robusta
@@ -101,6 +103,19 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Erro de rede ou timeout
+    if (!error.response) {
+      if (error.code === 'ECONNABORTED') {
+        error.message = 'Timeout: A requisição demorou muito para responder';
+      } else if (!navigator.onLine) {
+        error.message = 'Sem conexão com a internet';
+      } else {
+        error.message = 'Erro de conexão. Verifique sua internet';
+      }
+      return Promise.reject(error);
+    }
+
+    // Erro 401 - Token expirado ou inválido
     if (error.response?.status === 401 && !originalRequest._retry) {
       const refreshToken = getToken('refreshToken');
 
@@ -108,7 +123,7 @@ api.interceptors.response.use(
       if (!refreshToken) {
         removeTokens();
         if (typeof window !== 'undefined') {
-          window.location.href = '/login';
+          window.location.href = '/login?expired=true';
         }
         return Promise.reject(error);
       }
@@ -129,7 +144,8 @@ api.interceptors.response.use(
       try {
         const response = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/refresh`,
-          { refreshToken }
+          { refreshToken },
+          { timeout: 10000 } // 10 segundos timeout para refresh
         );
 
         const { accessToken, refreshToken: newRefreshToken, user } = response.data;
@@ -139,11 +155,24 @@ api.interceptors.response.use(
         if (newRefreshToken) {
           saveToken('refreshToken', newRefreshToken, REFRESH_COOKIE_OPTIONS);
         }
-        
+
         // Atualiza user backup se retornado
         if (user) {
           try {
-            localStorage.setItem('auth_user', JSON.stringify(user));
+            const userToSave = {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              tenantId: user.tenantId,
+              tenant: user.tenant ? {
+                id: user.tenant.id,
+                name: user.tenant.name,
+                slug: user.tenant.slug,
+                logo: user.tenant.logo
+              } : undefined
+            };
+            localStorage.setItem('auth_user', JSON.stringify(userToSave));
           } catch (e) {
             // localStorage não disponível
           }
@@ -160,10 +189,20 @@ api.interceptors.response.use(
         isRefreshing = false;
         removeTokens();
         if (typeof window !== 'undefined') {
-          window.location.href = '/login';
+          window.location.href = '/login?expired=true';
         }
         return Promise.reject(refreshError);
       }
+    }
+
+    // Erro 403 - Forbidden
+    if (error.response?.status === 403) {
+      error.message = 'Acesso negado. Você não tem permissão para esta ação';
+    }
+
+    // Erro 429 - Too Many Requests
+    if (error.response?.status === 429) {
+      error.message = 'Muitas requisições. Aguarde um momento e tente novamente';
     }
 
     return Promise.reject(error);

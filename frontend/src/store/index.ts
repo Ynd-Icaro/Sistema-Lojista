@@ -134,139 +134,126 @@ interface AuthState {
   setHasHydrated: (state: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      token: null,
-      refreshToken: null,
-      isAuthenticated: false,
-      _hasHydrated: false,
-      
-      setHasHydrated: (state) => {
-        set({ _hasHydrated: state });
-      },
-      
-      // Hydrata o estado a partir dos cookies (útil após limpeza de localStorage)
-      hydrateFromCookies: () => {
-        const token = getTokenFromStorage('token');
-        const refreshToken = getTokenFromStorage('refreshToken');
-        
-        if (token || refreshToken) {
-          set({
-            token,
-            refreshToken,
-            // Se tem token, marca como potencialmente autenticado
-            // O interceptor vai validar e atualizar o user
-            isAuthenticated: !!token,
-          });
-        }
-      },
-      
-      setAuth: (user, token, refreshToken) => {
-        // Salva tokens com configuração robusta
-        saveTokenToCookie('token', token, COOKIE_OPTIONS);
-        if (refreshToken) {
-          saveTokenToCookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
-        }
-        
-        // Também salva user no localStorage separado para redundância
-        try {
-          localStorage.setItem('auth_user', JSON.stringify(user));
-        } catch (e) {
-          console.warn('Could not save user to localStorage');
-        }
-        
-        set({ 
-          user, 
-          token, 
-          refreshToken: refreshToken || null, 
-          isAuthenticated: true,
-          _hasHydrated: true,
+export const useAuthStore = create<AuthState>(
+  (set, get) => ({
+    user: null,
+    token: null,
+    refreshToken: null,
+    isAuthenticated: false,
+    _hasHydrated: false,
+
+    setHasHydrated: (state) => {
+      set({ _hasHydrated: state });
+    },
+
+    // Hydrata o estado a partir dos cookies (útil após limpeza de localStorage)
+    hydrateFromCookies: () => {
+      const token = getTokenFromStorage('token');
+      const refreshToken = getTokenFromStorage('refreshToken');
+
+      if (token || refreshToken) {
+        set({
+          token,
+          refreshToken,
+          // Se tem token, marca como potencialmente autenticado
+          // O interceptor vai validar e atualizar o user
+          isAuthenticated: !!token,
         });
-      },
-      
-      logout: () => {
-        removeTokenFromStorage('token');
-        removeTokenFromStorage('refreshToken');
-        
-        try {
-          localStorage.removeItem('auth_user');
-        } catch (e) {
-          console.warn('Could not remove user from localStorage');
-        }
-        
-        set({ 
-          user: null, 
-          token: null, 
-          refreshToken: null, 
-          isAuthenticated: false 
-        });
-      },
-      
-      updateUser: (userData) => {
-        set((state) => {
-          const newUser = state.user ? { ...state.user, ...userData } : null;
-          
-          // Atualiza backup no localStorage
-          if (newUser) {
-            try {
-              localStorage.setItem('auth_user', JSON.stringify(newUser));
-            } catch (e) {
-              console.warn('Could not update user in localStorage');
-            }
-          }
-          
-          return { user: newUser };
-        });
-      },
-      
-      setTokens: (token, refreshToken) => {
-        saveTokenToCookie('token', token, COOKIE_OPTIONS);
-        if (refreshToken) {
-          saveTokenToCookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
-        }
-        set({ token, refreshToken: refreshToken || null });
-      },
-    }),
-    {
-      name: 'auth-storage',
-      storage: createJSONStorage(() => cookieStorage),
-      onRehydrateStorage: () => (state) => {
-        // Após reidratar do storage, verifica cookies como fallback
-        if (state) {
-          state.setHasHydrated(true);
-          
-          // Se não tem token mas existe no cookie, recupera
-          if (!state.token) {
-            const cookieToken = getTokenFromStorage('token');
-            const cookieRefresh = getTokenFromStorage('refreshToken');
-            
-            if (cookieToken) {
-              state.setTokens(cookieToken, cookieRefresh || undefined);
-              
-              // Tenta recuperar user do backup
-              try {
-                const userBackup = localStorage.getItem('auth_user');
-                if (userBackup) {
-                  const user = JSON.parse(userBackup);
-                  state.updateUser(user);
-                }
-              } catch (e) {
-                console.warn('Could not restore user from backup');
-              }
-            }
+      }
+    },
+
+    setAuth: (user, token, refreshToken) => {
+      // Salva tokens com configuração robusta
+      saveTokenToCookie('token', token, COOKIE_OPTIONS);
+      if (refreshToken) {
+        saveTokenToCookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
+      }
+
+      // Salva dados essenciais do user no localStorage (sem objetos Date complexos)
+      try {
+        const userToSave = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          tenantId: user.tenantId,
+          tenant: user.tenant ? {
+            id: user.tenant.id,
+            name: user.tenant.name,
+            slug: user.tenant.slug,
+            logo: user.tenant.logo
+          } : undefined
+        };
+        localStorage.setItem('auth_user', JSON.stringify(userToSave));
+      } catch (e) {
+        console.warn('Could not save user to localStorage');
+      }
+
+      set({
+        user,
+        token,
+        refreshToken: refreshToken || null,
+        isAuthenticated: true,
+        _hasHydrated: true,
+      });
+    },
+
+    logout: () => {
+      removeTokenFromStorage('token');
+      removeTokenFromStorage('refreshToken');
+
+      try {
+        localStorage.removeItem('auth_user');
+      } catch (e) {
+        console.warn('Could not remove user from localStorage');
+      }
+
+      set({
+        user: null,
+        token: null,
+        refreshToken: null,
+        isAuthenticated: false
+      });
+    },
+
+    updateUser: (userData) => {
+      set((state) => {
+        const newUser = state.user ? { ...state.user, ...userData } : null;
+
+        // Atualiza backup no localStorage
+        if (newUser) {
+          try {
+            const userToSave = {
+              id: newUser.id,
+              name: newUser.name,
+              email: newUser.email,
+              role: newUser.role,
+              tenantId: newUser.tenantId,
+              tenant: newUser.tenant ? {
+                id: newUser.tenant.id,
+                name: newUser.tenant.name,
+                slug: newUser.tenant.slug,
+                logo: newUser.tenant.logo
+              } : undefined
+            };
+            localStorage.setItem('auth_user', JSON.stringify(userToSave));
+          } catch (e) {
+            console.warn('Could not update user in localStorage');
           }
         }
-      },
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    }
-  )
+
+        return { user: newUser };
+      });
+    },
+
+    setTokens: (token, refreshToken) => {
+      saveTokenToCookie('token', token, COOKIE_OPTIONS);
+      if (refreshToken) {
+        saveTokenToCookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
+      }
+      set({ token, refreshToken: refreshToken || null });
+    },
+  })
 );
 
 interface CartItem {
