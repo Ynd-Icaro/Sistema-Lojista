@@ -99,14 +99,14 @@ export default function SuppliersPage() {
   // Fetch suppliers stats
   const { data: statsData } = useQuery({
     queryKey: ['suppliers-stats'],
-    queryFn: () => suppliersApi.getStats().then((res) => res.data),
+    queryFn: () => suppliersApi.getStats(),
   });
 
   // Fetch suppliers
   const { data: suppliersData, isLoading } = useQuery({
     queryKey: ['suppliers', page, search],
     queryFn: () =>
-      suppliersApi.getAll({ page, search: search || undefined }).then((res) => res.data),
+      suppliersApi.getAll({ page, search: search || undefined }),
   });
 
   // Create mutation

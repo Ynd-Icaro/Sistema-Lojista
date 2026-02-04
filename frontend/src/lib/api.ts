@@ -265,6 +265,15 @@ export const customersApi = {
   create: (data: any) => api.post('/customers', data).then(res => res.data),
   update: (id: string, data: any) => api.put(`/customers/${id}`, data).then(res => res.data),
   delete: (id: string) => api.delete(`/customers/${id}`).then(res => res.data),
+  downloadTemplate: () => api.get('/customers/import/template', { responseType: 'blob' }).then(res => res.data),
+  import: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/customers/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(res => res.data);
+  },
+  export: (params?: any) => api.post('/customers/export', params, { responseType: 'blob' }).then(res => res.data),
 };
 
 // Sales API

@@ -4,49 +4,49 @@ import { Type, Transform } from 'class-transformer';
 
 export class CreateProductDto {
   // Identificação
-  @ApiProperty({ example: 'PROD001' })
-  @IsString()
+  @ApiProperty({ example: 'PROD001', description: 'Código SKU único do produto' })
+  @IsString({ message: 'SKU deve ser uma string' })
   @IsNotEmpty({ message: 'SKU é obrigatório' })
   sku: string;
 
-  @ApiPropertyOptional({ example: '7891234567890' })
-  @IsString()
+  @ApiPropertyOptional({ example: '7891234567890', description: 'Código de barras' })
+  @IsString({ message: 'Código de barras deve ser uma string' })
   @IsOptional()
   barcode?: string;
 
-  @ApiPropertyOptional({ example: '7891234567890' })
-  @IsString()
+  @ApiPropertyOptional({ example: '7891234567890', description: 'Código GTIN/EAN' })
+  @IsString({ message: 'GTIN deve ser uma string' })
   @IsOptional()
   gtin?: string;
 
-  @ApiProperty({ example: 'iPhone 15 Pro Max' })
-  @IsString()
+  @ApiProperty({ example: 'iPhone 15 Pro Max', description: 'Nome do produto' })
+  @IsString({ message: 'Nome deve ser uma string' })
   @IsNotEmpty({ message: 'Nome é obrigatório' })
   name: string;
 
-  @ApiPropertyOptional({ example: 'Smartphone Apple iPhone 15 Pro Max 256GB' })
-  @IsString()
+  @ApiPropertyOptional({ example: 'Smartphone Apple iPhone 15 Pro Max 256GB', description: 'Descrição completa' })
+  @IsString({ message: 'Descrição deve ser uma string' })
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ example: 'iPhone 15 - o mais avançado' })
-  @IsString()
+  @ApiPropertyOptional({ example: 'iPhone 15 - o mais avançado', description: 'Descrição curta' })
+  @IsString({ message: 'Descrição curta deve ser uma string' })
   @IsOptional()
   shortDescription?: string;
 
-  @ApiPropertyOptional({ example: 'iPhone 15' })
-  @IsString()
+  @ApiPropertyOptional({ example: 'iPhone 15', description: 'Nome para importação' })
+  @IsString({ message: 'Nome para importação deve ser uma string' })
   @IsOptional()
   importName?: string;
 
   // Categoria e Fornecedor
-  @ApiPropertyOptional()
-  @IsString()
+  @ApiPropertyOptional({ description: 'ID da categoria' })
+  @IsString({ message: 'ID da categoria deve ser uma string' })
   @IsOptional()
   categoryId?: string;
 
-  @ApiPropertyOptional()
-  @IsString()
+  @ApiPropertyOptional({ description: 'ID do fornecedor' })
+  @IsString({ message: 'ID do fornecedor deve ser uma string' })
   @IsOptional()
   supplierId?: string;
 

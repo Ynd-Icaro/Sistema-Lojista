@@ -79,20 +79,19 @@ export default function NotasPage() {
     queryKey: ['invoices', search, typeFilter, statusFilter, page],
     queryFn: () =>
       invoicesApi
-        .getAll({ search, type: typeFilter, status: statusFilter, page, limit: 10 })
-        .then((res) => res.data),
+        .getAll({ search, type: typeFilter, status: statusFilter, page, limit: 10 }),
   });
 
   // Fetch recent sales for generating invoices
   const { data: salesData } = useQuery({
     queryKey: ['recent-sales-for-invoice'],
-    queryFn: () => salesApi.getAll({ limit: 50, status: 'COMPLETED' }).then((res) => res.data),
+    queryFn: () => salesApi.getAll({ limit: 50, status: 'COMPLETED' }),
   });
 
   // Fetch service orders for generating invoices
   const { data: serviceOrdersData } = useQuery({
     queryKey: ['recent-service-orders-for-invoice'],
-    queryFn: () => serviceOrdersApi.getAll({ limit: 50, status: 'COMPLETED' }).then((res) => res.data),
+    queryFn: () => serviceOrdersApi.getAll({ limit: 50, status: 'COMPLETED' }),
   });
 
   // Generate invoice mutation

@@ -15,6 +15,8 @@ import {
   Mail,
   MapPin,
   Star,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -73,6 +75,11 @@ export default function CustomersPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const { view, setView } = useViewMode('clientes', 'list');
+  
+  // Import/Export states
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const {
     register,
@@ -121,7 +128,7 @@ export default function CustomersPage() {
   const { data: customersData, isLoading } = useQuery({
     queryKey: ['customers', page, search],
     queryFn: () =>
-      customersApi.getAll({ page, search }).then((res) => res.data),
+      customersApi.getAll({ page, search }),
   });
 
   // Create customer mutation
@@ -220,6 +227,86 @@ export default function CustomersPage() {
     }
   };
 
+  // Import/Export functions
+  const handleDownloadTemplate = async () => {
+    try {
+      setIsDownloadingTemplate(true);
+      const response = await customersApi.downloadTemplate();
+      
+      // Criar blob e download
+      const blob = new Blob([response], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'template_clientes.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Template baixado com sucesso!');
+    } catch (error) {
+      showApiError(error, 'Erro ao baixar template');
+    } finally {
+      setIsDownloadingTemplate(false);
+    }
+  };
+
+  const handleImport = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx,.xls';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        setIsImporting(true);
+        const result = await customersApi.import(file);
+        
+        toast.success(`Importação concluída! ${result.imported} importados, ${result.updated} atualizados.`);
+        if (result.errors.length > 0) {
+          toast.error(`Erros encontrados: ${result.errors.join(', ')}`);
+        }
+        
+        queryClient.invalidateQueries({ queryKey: ['customers'] });
+      } catch (error) {
+        showApiError(error, 'Erro ao importar clientes');
+      } finally {
+        setIsImporting(false);
+      }
+    };
+    input.click();
+  };
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const response = await customersApi.export({});
+      
+      // Criar blob e download
+      const blob = new Blob([response], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'clientes.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Clientes exportados com sucesso!');
+    } catch (error) {
+      showApiError(error, 'Erro ao exportar clientes');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -237,6 +324,44 @@ export default function CustomersPage() {
             defaultView="list" 
             onViewChange={setView}
           />
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleDownloadTemplate}
+              disabled={isDownloadingTemplate}
+              className="btn-secondary"
+            >
+              {isDownloadingTemplate ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Download className="w-5 h-5" />
+              )}
+              Template
+            </button>
+            <button 
+              onClick={handleImport}
+              disabled={isImporting}
+              className="btn-secondary"
+            >
+              {isImporting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Upload className="w-5 h-5" />
+              )}
+              Importar
+            </button>
+            <button 
+              onClick={handleExport}
+              disabled={isExporting}
+              className="btn-secondary"
+            >
+              {isExporting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Download className="w-5 h-5" />
+              )}
+              Exportar
+            </button>
+          </div>
           <button onClick={() => openModal()} className="btn-primary">
             <Plus className="w-5 h-5" />
             Novo Cliente

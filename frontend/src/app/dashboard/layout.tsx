@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Fetch overdue service orders count
   const { data: overdueData } = useQuery({
     queryKey: ['service-orders-overdue'],
-    queryFn: () => serviceOrdersApi.getOverdueCount().then((res) => res.data),
+    queryFn: () => serviceOrdersApi.getOverdueCount(),
     refetchInterval: 60000, // Refetch every minute
   });
 

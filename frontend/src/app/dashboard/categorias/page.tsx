@@ -52,7 +52,7 @@ export default function CategoriasPage() {
   const { data: categoriesData, isLoading } = useQuery({
     queryKey: ['categories', search],
     queryFn: () =>
-      categoriesApi.getAll({ search }).then((res) => res.data),
+      categoriesApi.getAll({ search }),
   });
 
   // The backend returns an array directly, not {data: [...]}
