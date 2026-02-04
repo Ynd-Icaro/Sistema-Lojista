@@ -20,19 +20,20 @@ export class LoginDto {
 
 export class RegisterDto {
   @ApiProperty({ example: 'usuario@empresa.com.br' })
-  @IsEmail({}, { message: 'Email inválido' })
-  @IsNotEmpty({ message: 'Email é obrigatório' })
+  @IsEmail({}, { message: 'O email fornecido não é válido' })
+  @IsNotEmpty({ message: 'O email é obrigatório' })
   email: string;
 
   @ApiProperty({ example: 'Senha@123' })
   @IsString()
-  @MinLength(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
-  @IsNotEmpty({ message: 'Senha é obrigatória' })
+  @MinLength(6, { message: 'A senha deve ter no mínimo 6 caracteres' })
+  @IsNotEmpty({ message: 'A senha é obrigatória' })
   password: string;
 
   @ApiProperty({ example: 'João Silva' })
   @IsString()
-  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  @MinLength(2, { message: 'O nome deve ter no mínimo 2 caracteres' })
+  @IsNotEmpty({ message: 'O nome é obrigatório' })
   name: string;
 
   @ApiPropertyOptional({ example: '48999999999' })
@@ -47,11 +48,12 @@ export class RegisterDto {
 
   @ApiPropertyOptional({ example: 'Minha Empresa', description: 'Nome da nova empresa (cria um tenant novo)' })
   @IsString()
+  @MinLength(3, { message: 'O nome da empresa deve ter no mínimo 3 caracteres' })
   @IsOptional()
   tenantName?: string;
 
   @ApiPropertyOptional({ example: 'SELLER', enum: ['ADMIN', 'MANAGER', 'SELLER', 'VIEWER'] })
-  @IsEnum(['ADMIN', 'MANAGER', 'SELLER', 'VIEWER'])
+  @IsEnum(['ADMIN', 'MANAGER', 'SELLER', 'VIEWER'], { message: 'O papel deve ser ADMIN, MANAGER, SELLER ou VIEWER' })
   @IsOptional()
   role?: string;
 }

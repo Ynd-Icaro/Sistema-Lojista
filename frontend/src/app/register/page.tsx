@@ -13,10 +13,21 @@ import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/store';
 
 const registerSchema = z.object({
-  tenantName: z.string().min(3, 'Nome da empresa deve ter no mínimo 3 caracteres'),
-  name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
-  email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  tenantName: z.string()
+    .min(3, 'O nome da empresa deve ter no mínimo 3 caracteres')
+    .max(100, 'O nome da empresa deve ter no máximo 100 caracteres')
+    .regex(/^[a-zA-ZÀ-ÿ\s]+$/, 'O nome da empresa deve conter apenas letras e espaços'),
+  name: z.string()
+    .min(2, 'O nome deve ter no mínimo 2 caracteres')
+    .max(100, 'O nome deve ter no máximo 100 caracteres')
+    .regex(/^[a-zA-ZÀ-ÿ\s]+$/, 'O nome deve conter apenas letras e espaços'),
+  email: z.string()
+    .email('O formato do email é inválido')
+    .max(255, 'O email deve ter no máximo 255 caracteres'),
+  password: z.string()
+    .min(6, 'A senha deve ter no mínimo 6 caracteres')
+    .max(100, 'A senha deve ter no máximo 100 caracteres')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'As senhas não conferem',
@@ -30,11 +41,14 @@ export default function RegisterPage() {
   const setAuth = useAuthStore((state) => state.setAuth);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setError,
+    clearErrors,
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   });
@@ -42,6 +56,9 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     try {
       setIsLoading(true);
+      setFieldErrors({});
+      clearErrors();
+
       const response = await authApi.register({
         tenantName: data.tenantName,
         name: data.name,
@@ -51,10 +68,24 @@ export default function RegisterPage() {
       const { accessToken, refreshToken, user } = response.data;
       
       setAuth(user, accessToken, refreshToken);
-      toast.success('Conta criada com sucesso!');
+      toast.success('Conta criada com sucesso! Bem-vindo ao SmartFlux ERP.');
       router.push('/dashboard');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao criar conta');
+      const errorMessage = error.response?.data?.message || 'Erro ao criar conta. Tente novamente.';
+
+      // Tentar identificar o campo específico do erro
+      if (errorMessage.includes('email')) {
+        setError('email', { message: errorMessage });
+      } else if (errorMessage.includes('nome') && errorMessage.includes('empresa')) {
+        setError('tenantName', { message: errorMessage });
+      } else if (errorMessage.includes('nome') && !errorMessage.includes('empresa')) {
+        setError('name', { message: errorMessage });
+      } else if (errorMessage.includes('senha')) {
+        setError('password', { message: errorMessage });
+      } else {
+        // Se não conseguir identificar o campo, mostrar toast
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -87,6 +118,16 @@ export default function RegisterPage() {
         {/* Form Card */}
         <div className="bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-slate-800 p-4 sm:p-5 md:p-6 shadow-2xl">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4">
+            {/* Requisitos de Senha */}
+            <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
+              <h3 className="text-sm font-medium text-slate-300 mb-2">Requisitos para criação da conta:</h3>
+              <ul className="text-xs text-slate-400 space-y-1">
+                <li>• Nome da empresa único (mín. 3 caracteres)</li>
+                <li>• Nome completo (mín. 2 caracteres, apenas letras)</li>
+                <li>• Email válido e único na empresa</li>
+                <li>• Senha forte (mín. 6 caracteres, maiúscula, minúscula, número)</li>
+              </ul>
+            </div>
             <div>
               <label htmlFor="tenantName" className="block text-xs sm:text-sm font-medium text-slate-300 mb-1">
                 Nome da Empresa/Loja
@@ -101,6 +142,9 @@ export default function RegisterPage() {
               {errors.tenantName && (
                 <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.tenantName.message}</p>
               )}
+              <div className="mt-1 text-xs text-slate-500">
+                Nome único para sua empresa no sistema
+              </div>
             </div>
 
             <div>
@@ -117,6 +161,9 @@ export default function RegisterPage() {
               {errors.name && (
                 <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.name.message}</p>
               )}
+              <div className="mt-1 text-xs text-slate-500">
+                Seu nome completo para identificação
+              </div>
             </div>
 
             <div>
@@ -133,6 +180,9 @@ export default function RegisterPage() {
               {errors.email && (
                 <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.email.message}</p>
               )}
+              <div className="mt-1 text-xs text-slate-500">
+                Use um email válido para receber notificações
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -159,6 +209,9 @@ export default function RegisterPage() {
                 {errors.password && (
                   <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
                 )}
+                <div className="mt-1 text-xs text-slate-500">
+                  Mín. 6 caracteres, 1 maiúscula, 1 minúscula, 1 número
+                </div>
               </div>
 
               <div>

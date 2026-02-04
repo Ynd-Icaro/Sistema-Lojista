@@ -74,10 +74,27 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
+    // Validações básicas
+    if (!dto.email || !dto.email.trim()) {
+      throw new BadRequestException('O campo email é obrigatório');
+    }
+
+    if (!dto.password || dto.password.length < 6) {
+      throw new BadRequestException('A senha deve ter no mínimo 6 caracteres');
+    }
+
+    if (!dto.name || !dto.name.trim()) {
+      throw new BadRequestException('O campo nome é obrigatório');
+    }
+
     let tenantId = dto.tenantId;
 
     // Se tenantName for fornecido, criar novo tenant
     if (dto.tenantName) {
+      if (dto.tenantName.trim().length < 3) {
+        throw new BadRequestException('O nome da empresa deve ter no mínimo 3 caracteres');
+      }
+
       // Criar slug único para o tenant
       const slug = dto.tenantName
         .toLowerCase()
@@ -92,13 +109,13 @@ export class AuthService {
       });
 
       if (existingTenant) {
-        throw new BadRequestException('Já existe uma empresa com este nome');
+        throw new BadRequestException('Já existe uma empresa com este nome. Escolha um nome diferente.');
       }
 
       // Criar novo tenant
       const newTenant = await this.prisma.tenant.create({
         data: {
-          name: dto.tenantName,
+          name: dto.tenantName.trim(),
           slug: `${slug}-${Date.now()}`,
           isActive: true,
           settings: {
@@ -116,7 +133,7 @@ export class AuthService {
     }
 
     if (!tenantId) {
-      throw new BadRequestException('É necessário informar o ID da empresa ou nome para criar uma nova');
+      throw new BadRequestException('É necessário informar o ID da empresa ou nome para criar uma nova empresa');
     }
 
     // Check if tenant exists (para caso tenantId seja fornecido diretamente)
@@ -126,20 +143,30 @@ export class AuthService {
       });
 
       if (!tenant) {
-        throw new BadRequestException('Empresa não encontrada');
+        throw new BadRequestException('Empresa não encontrada. Verifique o ID da empresa.');
       }
+
+      if (!tenant.isActive) {
+        throw new BadRequestException('Esta empresa está inativa. Entre em contato com o administrador.');
+      }
+    }
+
+    // Validar formato do email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(dto.email)) {
+      throw new BadRequestException('O formato do email é inválido');
     }
 
     // Check if email already exists in tenant
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        email: dto.email,
+        email: dto.email.toLowerCase().trim(),
         tenantId: tenantId,
       },
     });
 
     if (existingUser) {
-      throw new BadRequestException('Email já cadastrado nesta empresa');
+      throw new BadRequestException('Este email já está cadastrado nesta empresa. Use outro email ou faça login.');
     }
 
     // Hash password
@@ -148,10 +175,10 @@ export class AuthService {
     // Create user
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email: dto.email.toLowerCase().trim(),
         password: hashedPassword,
-        name: dto.name,
-        phone: dto.phone,
+        name: dto.name.trim(),
+        phone: dto.phone?.trim(),
         role: (dto.role || UserRole.SELLER) as UserRoleType,
         tenantId: tenantId,
       },
