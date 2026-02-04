@@ -36,8 +36,8 @@ export function AddressForm({
 
   const loadStates = async () => {
     try {
-      const response = await addressApi.getStates();
-      setStates(response.data);
+      const states = await addressApi.getStates();
+      setStates(states);
     } catch (error) {
       // Estados padrão em caso de falha
       setStates([

@@ -118,13 +118,13 @@ export default function UsuariosPage() {
   // Fetch users
   const { data: usersData, isLoading } = useQuery({
     queryKey: ['users', search],
-    queryFn: () => usersApi.getAll({ search, limit: 100 }).then((res) => res.data),
+    queryFn: () => usersApi.getAll({ search, limit: 100 }),
   });
 
   // Fetch invitations
   const { data: invitationsData, isLoading: invitationsLoading } = useQuery({
     queryKey: ['invitations'],
-    queryFn: () => invitationsApi.getAll().then((res) => res.data),
+    queryFn: () => invitationsApi.getAll(),
   });
 
   // Create mutation

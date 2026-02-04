@@ -84,14 +84,14 @@ export function QuickProductModal({
   // Fetch categories
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => categoriesApi.getAll({ limit: 100 }).then((res) => res.data),
+    queryFn: () => categoriesApi.getAll({ limit: 100 }),
     enabled: isOpen,
   });
 
   // Fetch suppliers
   const { data: suppliersData } = useQuery({
     queryKey: ['suppliers-simple'],
-    queryFn: () => suppliersApi.getSimpleList().then((res) => res.data),
+    queryFn: () => suppliersApi.getSimpleList(),
     enabled: isOpen,
   });
 

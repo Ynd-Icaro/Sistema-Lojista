@@ -55,8 +55,8 @@ export function CepInput({
     setSuccess(false);
 
     try {
-      const response = await addressApi.findByCep(cleanCep);
-      onAddressFound(response.data);
+      const address = await addressApi.findByCep(cleanCep);
+      onAddressFound(address);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
@@ -162,8 +162,8 @@ export function useCepSearch() {
     setError(null);
 
     try {
-      const response = await addressApi.findByCep(cleanCep);
-      return response.data;
+      const address = await addressApi.findByCep(cleanCep);
+      return address;
     } catch (err: any) {
       setError(err.response?.data?.message || 'CEP não encontrado');
       return null;

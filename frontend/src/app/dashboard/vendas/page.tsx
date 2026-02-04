@@ -56,7 +56,7 @@ export default function VendasPage() {
         status: statusFilter || undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
-      }).then((res) => res.data),
+      }),
   });
 
   // Calculate totals

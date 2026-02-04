@@ -208,8 +208,7 @@ export default function SuppliersPage() {
 
     setIsSearchingCep(true);
     try {
-      const response = await addressApi.findByCep(cleanCep);
-      const address = response.data;
+      const address = await addressApi.findByCep(cleanCep);
       
       setValue('address', address.street || '');
       setValue('neighborhood', address.neighborhood || '');

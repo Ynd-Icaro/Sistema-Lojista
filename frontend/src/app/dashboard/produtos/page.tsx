@@ -90,26 +90,26 @@ export default function ProductsPage() {
   // Fetch products stats
   const { data: statsData } = useQuery({
     queryKey: ['products-stats'],
-    queryFn: () => productsApi.getStats().then((res) => res.data),
+    queryFn: () => productsApi.getStats(),
   });
 
   // Fetch products
   const { data: productsData, isLoading } = useQuery({
     queryKey: ['products', page, search, categoryFilter],
     queryFn: () =>
-      productsApi.getAll({ page, search, categoryId: categoryFilter || undefined }).then((res) => res.data),
+      productsApi.getAll({ page, search, categoryId: categoryFilter || undefined }),
   });
 
   // Fetch categories for filter
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => categoriesApi.getAll().then((res) => res.data),
+    queryFn: () => categoriesApi.getAll(),
   });
 
   // Fetch suppliers for filter
   const { data: suppliersData, isLoading: suppliersLoading } = useQuery({
     queryKey: ['suppliers-simple'],
-    queryFn: () => suppliersApi.getSimpleList().then((res) => res.data),
+    queryFn: () => suppliersApi.getSimpleList(),
   });
 
   const handleCategoryCreated = (category: any) => {

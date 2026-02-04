@@ -59,13 +59,13 @@ export default function ReviewProductsPage() {
   // Fetch products for review
   const { data: productsData, isLoading, refetch } = useQuery({
     queryKey: ['products-review'],
-    queryFn: () => productsApi.getProductsForReview().then((res) => res.data),
+    queryFn: () => productsApi.getProductsForReview(),
   });
 
   // Fetch categories
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => categoriesApi.getAll().then((res) => res.data),
+    queryFn: () => categoriesApi.getAll(),
   });
 
   // Approve mutation

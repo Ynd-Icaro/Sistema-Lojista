@@ -176,7 +176,7 @@ export default function NewProductPage() {
   // Fetch product if editing
   const { data: productData, isLoading: loadingProduct } = useQuery({
     queryKey: ['product', productId],
-    queryFn: () => productsApi.getOne(productId!).then((res) => res.data),
+    queryFn: () => productsApi.getOne(productId!),
     enabled: isEditing,
   });
 
@@ -194,13 +194,13 @@ export default function NewProductPage() {
   // Fetch categories
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => categoriesApi.getAll().then((res) => res.data),
+    queryFn: () => categoriesApi.getAll(),
   });
 
   // Fetch suppliers
   const { data: suppliersData } = useQuery({
     queryKey: ['suppliers-simple'],
-    queryFn: () => suppliersApi.getSimpleList().then((res) => res.data),
+    queryFn: () => suppliersApi.getSimpleList(),
   });
 
   // Create mutation

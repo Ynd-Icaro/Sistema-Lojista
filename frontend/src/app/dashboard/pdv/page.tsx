@@ -78,14 +78,14 @@ export default function PDVPage() {
   const { data: productsData, isLoading: loadingProducts } = useQuery({
     queryKey: ['products-pdv', debouncedSearch],
     queryFn: () =>
-      productsApi.getAll({ search: debouncedSearch, limit: 20 }).then((res) => res.data),
+      productsApi.getAll({ search: debouncedSearch, limit: 20 }),
   });
 
   // Fetch customers
   const { data: customersData } = useQuery({
     queryKey: ['customers-pdv', searchCustomer],
     queryFn: () =>
-      customersApi.getAll({ search: searchCustomer, limit: 10 }).then((res) => res.data),
+      customersApi.getAll({ search: searchCustomer, limit: 10 }),
     enabled: showCustomerModal,
   });
 

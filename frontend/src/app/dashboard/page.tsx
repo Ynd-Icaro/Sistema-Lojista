@@ -32,37 +32,37 @@ import { formatCurrency, formatDateTime, getStatusLabel, getStatusColor } from '
 export default function DashboardPage() {
   const { data: overview, isLoading: loadingOverview } = useQuery({
     queryKey: ['dashboard-overview'],
-    queryFn: () => dashboardApi.getOverview().then((res) => res.data),
+    queryFn: () => dashboardApi.getOverview(),
   });
 
   const { data: salesChart } = useQuery({
     queryKey: ['dashboard-sales-chart'],
-    queryFn: () => dashboardApi.getSalesChart(7).then((res) => res.data),
+    queryFn: () => dashboardApi.getSalesChart(7),
   });
 
   const { data: topProducts } = useQuery({
     queryKey: ['dashboard-top-products'],
-    queryFn: () => dashboardApi.getTopProducts(5).then((res) => res.data),
+    queryFn: () => dashboardApi.getTopProducts(5),
   });
 
   const { data: recentSales } = useQuery({
     queryKey: ['dashboard-recent-sales'],
-    queryFn: () => dashboardApi.getRecentSales(5).then((res) => res.data),
+    queryFn: () => dashboardApi.getRecentSales(5),
   });
 
   const { data: lowStock } = useQuery({
     queryKey: ['dashboard-low-stock'],
-    queryFn: () => dashboardApi.getLowStock(5).then((res) => res.data),
+    queryFn: () => dashboardApi.getLowStock(5),
   });
 
   const { data: pendingOrders } = useQuery({
     queryKey: ['dashboard-pending-orders'],
-    queryFn: () => dashboardApi.getPendingOrders(5).then((res) => res.data),
+    queryFn: () => dashboardApi.getPendingOrders(5),
   });
 
   const { data: financial } = useQuery({
     queryKey: ['dashboard-financial'],
-    queryFn: () => dashboardApi.getFinancial().then((res) => res.data),
+    queryFn: () => dashboardApi.getFinancial(),
   });
 
   const stats = [

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { CreateProductDto, UpdateProductDto, ProductQueryDto } from './dto/product.dto';
+import { CreateProductDto, UpdateProductDto, ProductQueryDto, CreateVariationDto } from './dto/product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -448,11 +448,11 @@ export class ProductsService {
     });
   }
 
-  async createVariation(parentProductId: string, tenantId: string, dto: CreateVariationDto) {
-    return this.createVariations(parentProductId, tenantId, [dto]);
-  }
+  // === VARIAÇÕES ===
+
+  async createVariations(parentProductId: string, tenantId: string, variations: any[]) {
     const parentProduct = await this.findOne(parentProductId, tenantId);
-    
+
     if (!parentProduct) {
       throw new NotFoundException('Produto pai não encontrado');
     }
@@ -554,15 +554,19 @@ export class ProductsService {
     // Atualizar produto pai para marcar como produto principal
     await this.prisma.product.update({
       where: { id: parentProductId },
-      data: { 
+      data: {
         isMainProduct: true,
-        variationAttributes: variations[0] ? Object.keys(variations[0]).filter(key => 
+        variationAttributes: variations[0] ? Object.keys(variations[0]).filter(key =>
           ['color', 'size'].includes(key) && variations[0][key]
         ) : []
       },
     });
 
     return createdVariations;
+  }
+
+  async createVariation(parentProductId: string, tenantId: string, dto: CreateVariationDto) {
+    return this.createVariations(parentProductId, tenantId, [dto]);
   }
 
   async getVariations(parentProductId: string, tenantId: string) {
@@ -586,7 +590,7 @@ export class ProductsService {
 
   async updateVariation(id: string, tenantId: string, dto: any) {
     const variation = await this.findOne(id, tenantId);
-    
+
     if (!variation.isVariation) {
       throw new BadRequestException('Este produto não é uma variação');
     }
@@ -596,7 +600,7 @@ export class ProductsService {
 
   async deleteVariation(id: string, tenantId: string) {
     const variation = await this.findOne(id, tenantId);
-    
+
     if (!variation.isVariation) {
       throw new BadRequestException('Este produto não é uma variação');
     }
@@ -625,7 +629,7 @@ export class ProductsService {
   }
 
   private generateVariationName(baseName: string, variationData: any): string {
-    const parts: string[] = [];
+    const parts: string[] = [baseName];
     if (variationData.color) parts.push(variationData.color);
     if (variationData.size) parts.push(variationData.size);
     return parts.join(' - ');

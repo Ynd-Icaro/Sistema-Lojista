@@ -151,14 +151,13 @@ export default function OrdensServicoPage() {
     queryKey: ['service-orders', search, statusFilter, page],
     queryFn: () =>
       serviceOrdersApi
-        .getAll({ search, status: statusFilter, page, limit: 10 })
-        .then((res) => res.data),
+        .getAll({ search, status: statusFilter, page, limit: 10 }),
   });
 
   // Fetch customers for dropdown
   const { data: customersData } = useQuery({
     queryKey: ['customers-dropdown'],
-    queryFn: () => customersApi.getAll({ limit: 100 }).then((res) => res.data),
+    queryFn: () => customersApi.getAll({ limit: 100 }),
   });
 
   // Create mutation
