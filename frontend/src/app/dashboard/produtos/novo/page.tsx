@@ -28,6 +28,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { QuickCategoryModal, QuickSupplierModal } from '@/components/modals';
 import { productsApi, categoriesApi, suppliersApi } from '@/lib/api';
 import { formatCurrency, cn } from '@/lib/utils';
 import { showApiError } from '@/lib/error-handler';
@@ -135,6 +136,8 @@ export default function NewProductPage() {
   const isEditing = !!productId;
 
   const [activeTab, setActiveTab] = useState('basic');
+  const [showQuickCategoryModal, setShowQuickCategoryModal] = useState(false);
+  const [showQuickSupplierModal, setShowQuickSupplierModal] = useState(false);
 
   const {
     register,
@@ -450,26 +453,46 @@ export default function NewProductPage() {
 
               <div>
                 <label className="label">Categoria</label>
-                <select {...register('categoryId')} className="input">
-                  <option value="">Selecione uma categoria</option>
-                  {categoriesData?.map?.((cat: any) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select {...register('categoryId')} className="input flex-1">
+                    <option value="">Selecione uma categoria</option>
+                    {categoriesData?.map?.((cat: any) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickCategoryModal(true)}
+                    className="btn-secondary px-3"
+                    title="Adicionar categoria rapidamente"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="label">Fornecedor</label>
-                <select {...register('supplierId')} className="input">
-                  <option value="">Selecione um fornecedor</option>
-                  {suppliersData?.map?.((supplier: any) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select {...register('supplierId')} className="input flex-1">
+                    <option value="">Selecione um fornecedor</option>
+                    {suppliersData?.map?.((supplier: any) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickSupplierModal(true)}
+                    className="btn-secondary px-3"
+                    title="Adicionar fornecedor rapidamente"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -580,6 +603,58 @@ export default function NewProductPage() {
               <DollarSign className="w-5 h-5" />
               Preços e Valores
             </h2>
+
+            {/* Calculadora de Preço */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+              <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
+                <Calculator className="w-4 h-4" />
+                Calculadora de Preço Sugerido
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="label text-sm">Preço de Custo</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={watchedCostPrice || ''}
+                    onChange={(e) => setValue('costPrice', parseFloat(e.target.value) || 0)}
+                    className="input"
+                    placeholder="0,00"
+                  />
+                </div>
+                <div>
+                  <label className="label text-sm">Margem Desejada (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    onChange={(e) => {
+                      const cost = watchedCostPrice || 0;
+                      const margin = parseFloat(e.target.value) || 0;
+                      if (cost > 0 && margin > 0) {
+                        const suggestedPrice = cost / (1 - margin / 100);
+                        setValue('salePrice', parseFloat(suggestedPrice.toFixed(2)));
+                      }
+                    }}
+                    className="input"
+                    placeholder="30"
+                  />
+                </div>
+                <div>
+                  <label className="label text-sm">Preço Sugerido</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={watchedSalePrice || ''}
+                    readOnly
+                    className="input bg-slate-100 dark:bg-slate-700"
+                    placeholder="Calculado automaticamente"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                Digite o preço de custo e a margem desejada para calcular o preço de venda sugerido.
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
@@ -897,7 +972,12 @@ export default function NewProductPage() {
                 Preencha corretamente as dimensões para cálculo preciso de frete pelos Correios e transportadoras.
                 O peso cúbico é calculado automaticamente: (A × L × C) / 6000
               </p>
-              {(watch('height') && watch('width') && watch('length')) && (
+              {(() => {
+                const height = watch('height');
+                const width = watch('width');
+                const length = watch('length');
+                return height && width && length && height > 0 && width > 0 && length > 0;
+              })() && (
                 <p className="mt-2 text-sm font-medium text-blue-800 dark:text-blue-200">
                   Peso cúbico: {((watch('height')! * watch('width')! * watch('length')!) / 6000).toFixed(3)} kg
                 </p>
@@ -1219,6 +1299,27 @@ export default function NewProductPage() {
           </button>
         </div>
       </form>
+
+      {/* Quick Add Modals */}
+      <QuickCategoryModal
+        isOpen={showQuickCategoryModal}
+        onClose={() => setShowQuickCategoryModal(false)}
+        onSuccess={(category) => {
+          setValue('categoryId', category.id);
+          queryClient.invalidateQueries({ queryKey: ['categories'] });
+          setShowQuickCategoryModal(false);
+        }}
+      />
+
+      <QuickSupplierModal
+        isOpen={showQuickSupplierModal}
+        onClose={() => setShowQuickSupplierModal(false)}
+        onSuccess={(supplier) => {
+          setValue('supplierId', supplier.id);
+          queryClient.invalidateQueries({ queryKey: ['suppliers-simple'] });
+          setShowQuickSupplierModal(false);
+        }}
+      />
     </div>
   );
 }
