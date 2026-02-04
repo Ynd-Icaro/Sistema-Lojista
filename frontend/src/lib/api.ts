@@ -176,6 +176,10 @@ export const authApi = {
     api.post('/auth/login', { email, password }).then(res => res.data),
   register: (data: { name: string; email: string; password: string; tenantName: string }) =>
     api.post('/auth/register', data).then(res => res.data),
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }).then(res => res.data),
+  resetPassword: (data: { email: string; code: string; newPassword: string }) =>
+    api.post('/auth/reset-password', data).then(res => res.data),
   me: () => api.get('/auth/me').then(res => res.data),
   profile: () => api.get('/auth/profile').then(res => res.data),
   updateProfile: (data: any) => api.patch('/auth/profile', data).then(res => res.data),

@@ -103,3 +103,28 @@ export class UpdateProfileDto {
   @IsOptional()
   confirmPassword?: string;
 }
+
+export class ForgotPasswordDto {
+  @ApiProperty({ example: 'usuario@empresa.com.br' })
+  @IsEmail({}, { message: 'Email inválido' })
+  @IsNotEmpty({ message: 'Email é obrigatório' })
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ example: 'usuario@empresa.com.br' })
+  @IsEmail({}, { message: 'Email inválido' })
+  @IsNotEmpty({ message: 'Email é obrigatório' })
+  email: string;
+
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @IsNotEmpty({ message: 'Código de verificação é obrigatório' })
+  code: string;
+
+  @ApiProperty({ example: 'NovaSenha@123' })
+  @IsString()
+  @MinLength(6, { message: 'Nova senha deve ter no mínimo 6 caracteres' })
+  @IsNotEmpty({ message: 'Nova senha é obrigatória' })
+  newPassword: string;
+}

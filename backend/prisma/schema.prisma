@@ -162,6 +162,8 @@ model User {
   status       UserStatus @default(ACTIVE)
   lastLogin    DateTime?
   refreshToken String?
+  resetCode    String?
+  resetCodeExpiresAt DateTime?
   settings     Json?      @default("{}")
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt

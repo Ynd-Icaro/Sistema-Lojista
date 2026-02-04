@@ -2,14 +2,16 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { LoginDto, RegisterDto, RefreshTokenDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import { UserRole, UserRoleType } from '../../types';
+import { EmailService } from '../notifications/services/email.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async validateUser(email: string, password: string, tenantId?: string) {
@@ -317,5 +319,96 @@ export class AuthService {
 
     const { password, refreshToken, ...result } = updatedUser;
     return result;
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.prisma.user.findFirst({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Email não encontrado');
+    }
+
+    // Generate a 6-digit code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Update user with reset code
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetCode,
+        resetCodeExpiresAt: expiresAt,
+      },
+    });
+
+    // Send email
+    const subject = 'Código de Verificação - SmartFlux ERP';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Redefinição de Senha</h2>
+        <p>Olá ${user.name},</p>
+        <p>Recebemos uma solicitação para redefinir sua senha no SmartFlux ERP.</p>
+        <p>Seu código de verificação é:</p>
+        <div style="background-color: #f0f0f0; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0;">
+          ${resetCode}
+        </div>
+        <p>Este código é válido por 15 minutos.</p>
+        <p>Se você não solicitou esta redefinição, ignore este email.</p>
+        <br>
+        <p>Atenciosamente,<br>Equipe SmartFlux ERP</p>
+      </div>
+    `;
+
+    try {
+      await this.emailService.send({
+        to: dto.email,
+        subject,
+        html,
+      });
+    } catch (error) {
+      console.error('Erro ao enviar email de redefinição:', error);
+      throw new BadRequestException('Erro ao enviar email. Tente novamente.');
+    }
+
+    return { message: 'Código de verificação enviado para seu email' };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.prisma.user.findFirst({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Email não encontrado');
+    }
+
+    if (!user.resetCode || !user.resetCodeExpiresAt) {
+      throw new BadRequestException('Código de verificação não encontrado. Solicite um novo código.');
+    }
+
+    if (user.resetCode !== dto.code) {
+      throw new BadRequestException('Código de verificação inválido');
+    }
+
+    if (new Date() > user.resetCodeExpiresAt) {
+      throw new BadRequestException('Código de verificação expirado. Solicite um novo código.');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+
+    // Update password and clear reset code
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetCode: null,
+        resetCodeExpiresAt: null,
+      },
+    });
+
+    return { message: 'Senha redefinida com sucesso' };
   }
 }
