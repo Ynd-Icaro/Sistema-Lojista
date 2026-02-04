@@ -218,7 +218,7 @@ export function ServiceOrderPipeline({
                 )}
 
                 {ordersByStatus[column.key]?.map((order) => {
-                  const deadlineStatus = getDeadlineStatus(order.estimatedDate);
+                  const deadlineStatus = getDeadlineStatus(order.estimatedDate || null);
                   return (
                     <div
                       key={order.id}

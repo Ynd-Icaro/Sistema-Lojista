@@ -453,7 +453,7 @@ export default function OrdensServicoPage() {
                   </thead>
                   <tbody>
                     {ordersData.data.map((order: any) => {
-                      const deadlineStatus = getDeadlineStatus(order.estimatedDate);
+                      const deadlineStatus = getDeadlineStatus(order.estimatedDate || null);
                       return (
                         <tr 
                           key={order.id} 
@@ -604,7 +604,7 @@ export default function OrdensServicoPage() {
           ) : ordersData?.data && ordersData.data.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {ordersData.data.map((order: any) => {
-                const deadlineStatus = getDeadlineStatus(order.estimatedDate);
+                const deadlineStatus = getDeadlineStatus(order.estimatedDate || null);
                 return (
                   <motion.div
                     key={order.id}
