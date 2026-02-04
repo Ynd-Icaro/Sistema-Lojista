@@ -5,6 +5,10 @@
   "author": "SmartFlux Team",
   "private": true,
   "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "build": "NODE_OPTIONS=\"--max-old-space-size=4096\" npx prisma generate && NODE_OPTIONS=\"--max-old-space-size=4096\" nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

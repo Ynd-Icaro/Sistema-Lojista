@@ -475,7 +475,7 @@ export default function OrdensServicoPage() {
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           <span className="text-slate-600 dark:text-slate-400">
-                            {order.device ? `${order.device}${order.brand ? ` - ${order.brand}` : ''}` : '-'}
+                            {order.deviceType ? `${order.deviceType}${order.deviceBrand ? ` - ${order.deviceBrand}` : ''}` : '-'}
                           </span>
                         </td>
                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
@@ -638,10 +638,10 @@ export default function OrdensServicoPage() {
                     {order.customer?.name}
                   </div>
 
-                  {order.device && (
+                  {order.deviceType && (
                     <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-3">
                       <Package className="w-4 h-4" />
-                      {order.device}{order.brand ? ` - ${order.brand}` : ''}
+                      {order.deviceType}{order.deviceBrand ? ` - ${order.deviceBrand}` : ''}
                     </div>
                   )}
 
@@ -987,12 +987,24 @@ export default function OrdensServicoPage() {
                     {statusLabels[selectedOrder.status]}
                   </span>
                 </div>
-                <button
-                  onClick={closeDetailModal}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      closeDetailModal();
+                      openModal(selectedOrder);
+                    }}
+                    className="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg"
+                    title="Editar ordem"
+                  >
+                    <Edit2 className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={closeDetailModal}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="p-4 space-y-6">
