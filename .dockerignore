@@ -1,0 +1,8 @@
+frontend/
+.git/
+.github/
+README.md
+MANUAL_USUARIO.md
+GUIA_FLUXO_SISTEMA.md
+railway.json
+*.md
