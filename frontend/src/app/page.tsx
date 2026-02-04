@@ -915,7 +915,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/register"
+                  href="https://wa.me/5548988500203"
                   className={`block text-center py-3 px-6 rounded-xl font-semibold transition-all ${plan.highlighted ? 'bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-500 hover:to-secondary-500 text-white shadow-lg shadow-primary-500/25' : 'bg-slate-800 hover:bg-slate-700 text-white'}`}
                 >
                   {plan.cta}
@@ -1077,7 +1077,7 @@ export default function LandingPage() {
 
       {/* Floating WhatsApp Button */}
       <motion.a
-        href="https://wa.me/5548999999999"
+        href="https://wa.me/5548988500203"
         target="_blank"
         rel="noopener noreferrer"
         initial={{ scale: 0, opacity: 0 }}
