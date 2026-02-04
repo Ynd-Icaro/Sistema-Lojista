@@ -905,6 +905,26 @@ export class ReportsService {
     `;
   }
 
+  // ========== GENERIC REPORT GENERATOR ==========
+  async generateReport(tenantId: string, reportType: string, filters: ReportFiltersDto) {
+    switch (reportType) {
+      case 'sales':
+        return this.generateSalesReport(tenantId, filters);
+      case 'products':
+        return this.generateProductsReport(tenantId, filters);
+      case 'customers':
+        return this.generateCustomersReport(tenantId, filters);
+      case 'financial':
+        return this.generateFinancialReport(tenantId, filters);
+      case 'serviceOrders':
+        return this.generateServiceOrdersReport(tenantId, filters);
+      case 'invoices':
+        return this.generateInvoicesReport(tenantId, filters);
+      default:
+        throw new BadRequestException(`Tipo de relatório não suportado: ${reportType}`);
+    }
+  }
+
   // ========== PRESETS ==========
   async getPresets(tenantId: string) {
     // For now, return empty array - implement preset storage if needed

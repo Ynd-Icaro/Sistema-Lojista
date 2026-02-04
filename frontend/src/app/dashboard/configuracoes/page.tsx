@@ -168,13 +168,13 @@ export default function ConfiguracoesPage() {
   // Fetch settings
   const { data: settingsData, isLoading: loadingSettings } = useQuery({
     queryKey: ['settings'],
-    queryFn: () => settingsApi.get().then((res) => res.data),
+    queryFn: () => settingsApi.get(),
   });
 
   // Fetch user profile
   const { data: profileData, isLoading: loadingProfile } = useQuery({
     queryKey: ['profile'],
-    queryFn: () => authApi.profile().then((res) => res.data),
+    queryFn: () => authApi.profile(),
   });
 
   // Company form

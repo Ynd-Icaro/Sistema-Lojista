@@ -206,7 +206,7 @@ export default function RelatoriosPage() {
   // Query para carregar dados do relatório
   const { data: reportData, isLoading, refetch } = useQuery({
     queryKey: ['report', selectedReport, filters],
-    queryFn: () => reportsApi.generate(selectedReport!, filters).then(res => res.data),
+    queryFn: () => reportsApi.generate(selectedReport!, filters),
     enabled: showReport && !!selectedReport,
   });
 

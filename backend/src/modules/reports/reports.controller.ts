@@ -87,6 +87,18 @@ export class ReportsController {
     return this.reportsService.generateInvoicesReport(tenantId, filters);
   }
 
+  @Post(':reportType')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Gerar relatório genérico' })
+  generateReport(
+    @Param('reportType') reportType: string,
+    @CurrentUser('tenantId') tenantId: string,
+    @Body() filters: ReportFiltersDto,
+  ) {
+    return this.reportsService.generateReport(tenantId, reportType, filters);
+  }
+
   // ========== EXPORT ENDPOINTS ==========
   @Post(':reportType/export/pdf')
   @UseGuards(JwtAuthGuard)

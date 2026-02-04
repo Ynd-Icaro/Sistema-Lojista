@@ -10,7 +10,7 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "build": "NODE_OPTIONS=\"--max-old-space-size=4096\" npx prisma generate && NODE_OPTIONS=\"--max-old-space-size=4096\" nest build",
+    "build": "npx prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node dist/main",
     "start:dev": "nest start --watch",

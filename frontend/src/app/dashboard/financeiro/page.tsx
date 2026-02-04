@@ -83,7 +83,7 @@ export default function FinanceiroPage() {
   // Fetch dashboard data
   const { data: dashboardData } = useQuery({
     queryKey: ['financial-dashboard'],
-    queryFn: () => financialApi.getDashboard().then((res) => res.data),
+    queryFn: () => financialApi.getDashboard(),
   });
 
   // Fetch transactions
@@ -94,19 +94,19 @@ export default function FinanceiroPage() {
         type: filterType || undefined,
         status: filterStatus || undefined,
         limit: 50,
-      }).then((res) => res.data),
+      }),
   });
 
   // Fetch categories
   const { data: categoriesData } = useQuery({
     queryKey: ['transaction-categories'],
-    queryFn: () => financialApi.getCategories().then((res) => res.data),
+    queryFn: () => financialApi.getCategories(),
   });
 
   // Fetch cash flow
   const { data: cashFlowData } = useQuery({
     queryKey: ['cash-flow'],
-    queryFn: () => financialApi.getCashFlow().then((res) => res.data),
+    queryFn: () => financialApi.getCashFlow(),
   });
 
   // Create transaction mutation

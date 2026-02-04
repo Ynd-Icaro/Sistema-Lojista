@@ -173,12 +173,12 @@ api.interceptors.response.use(
 // Auth API
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post('/auth/login', { email, password }),
+    api.post('/auth/login', { email, password }).then(res => res.data),
   register: (data: { name: string; email: string; password: string; tenantName: string }) =>
-    api.post('/auth/register', data),
-  me: () => api.get('/auth/me'),
-  profile: () => api.get('/auth/profile'),
-  updateProfile: (data: any) => api.patch('/auth/profile', data),
+    api.post('/auth/register', data).then(res => res.data),
+  me: () => api.get('/auth/me').then(res => res.data),
+  profile: () => api.get('/auth/profile').then(res => res.data),
+  updateProfile: (data: any) => api.patch('/auth/profile', data).then(res => res.data),
 };
 
 // Dashboard API
