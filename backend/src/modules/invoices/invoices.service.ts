@@ -1,11 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { CreateInvoiceDto, InvoiceQueryDto, GenerateInvoiceDto } from './dto/invoice.dto';
-import { InvoiceType, InvoiceTypeType } from '../../types';
-import * as QRCode from 'qrcode';
-import { v4 as uuidv4 } from 'uuid';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PrismaService } from "../../prisma/prisma.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import {
+  CreateInvoiceDto,
+  InvoiceQueryDto,
+  GenerateInvoiceDto,
+} from "./dto/invoice.dto";
+import { InvoiceType, InvoiceTypeType } from "../../types";
+import * as QRCode from "qrcode";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class InvoicesService {
@@ -16,16 +24,25 @@ export class InvoicesService {
   ) {}
 
   async findAll(tenantId: string, query: InvoiceQueryDto) {
-    const { page = 1, limit = 20, search, type, status, customerId, startDate, endDate } = query;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      type,
+      status,
+      customerId,
+      startDate,
+      endDate,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: any = { tenantId };
 
     if (search) {
       where.OR = [
-        { number: { contains: search, mode: 'insensitive' } },
-        { recipientName: { contains: search, mode: 'insensitive' } },
-        { accessKey: { contains: search, mode: 'insensitive' } },
+        { number: { contains: search, mode: "insensitive" } },
+        { recipientName: { contains: search, mode: "insensitive" } },
+        { accessKey: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -63,7 +80,7 @@ export class InvoicesService {
             select: { id: true, code: true },
           },
         },
-        orderBy: { issueDate: 'desc' },
+        orderBy: { issueDate: "desc" },
       }),
       this.prisma.invoice.count({ where }),
     ]);
@@ -104,7 +121,7 @@ export class InvoicesService {
     });
 
     if (!invoice) {
-      throw new NotFoundException('Nota fiscal não encontrada');
+      throw new NotFoundException("Nota fiscal não encontrada");
     }
 
     return invoice;
@@ -135,7 +152,7 @@ export class InvoicesService {
     });
 
     if (!invoice) {
-      throw new NotFoundException('Nota fiscal não encontrada');
+      throw new NotFoundException("Nota fiscal não encontrada");
     }
 
     return invoice;
@@ -149,14 +166,14 @@ export class InvoicesService {
 
     // Get next number
     const lastInvoice = await this.prisma.invoice.findFirst({
-      where: { tenantId, series: dto.series || '1' },
-      orderBy: { number: 'desc' },
+      where: { tenantId, series: dto.series || "1" },
+      orderBy: { number: "desc" },
       select: { number: true },
     });
 
-    const nextNumber = lastInvoice 
-      ? (parseInt(lastInvoice.number) + 1).toString().padStart(9, '0')
-      : '000000001';
+    const nextNumber = lastInvoice
+      ? (parseInt(lastInvoice.number) + 1).toString().padStart(9, "0")
+      : "000000001";
 
     // Generate access key (simulated)
     const accessKey = this.generateAccessKey(tenantId, nextNumber);
@@ -172,7 +189,7 @@ export class InvoicesService {
     // Get sale items if sale provided
     let items = dto.items || [];
     let subtotal = dto.subtotal || 0;
-    
+
     if (dto.saleId) {
       const sale = await this.prisma.sale.findUnique({
         where: { id: dto.saleId },
@@ -209,7 +226,7 @@ export class InvoicesService {
     }
 
     // Generate QR Code
-    const qrCodeData = `${this.configService.get('FRONTEND_URL')}/invoice/${accessKey}`;
+    const qrCodeData = `${this.configService.get("FRONTEND_URL")}/invoice/${accessKey}`;
     const qrCode = await QRCode.toDataURL(qrCodeData);
 
     const invoice = await this.prisma.invoice.create({
@@ -219,43 +236,46 @@ export class InvoicesService {
         saleId: dto.saleId,
         serviceOrderId: dto.serviceOrderId,
         type: (dto.type || InvoiceType.SALE) as InvoiceTypeType,
-        status: 'ISSUED',
+        status: "ISSUED",
         number: nextNumber,
-        series: dto.series || '1',
+        series: dto.series || "1",
         issueDate: new Date(),
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-        
+
         subtotal,
         discount,
         tax,
         total,
-        
+
         // Issuer info (from tenant or config)
-        issuerName: tenant?.name || this.configService.get('COMPANY_NAME'),
-        issuerCnpj: tenant?.cnpj || this.configService.get('COMPANY_CNPJ'),
-        issuerAddress: tenant?.address || this.configService.get('COMPANY_ADDRESS'),
-        issuerCity: tenant?.city || this.configService.get('COMPANY_CITY'),
-        issuerState: tenant?.state || this.configService.get('COMPANY_STATE'),
-        issuerPhone: tenant?.phone || this.configService.get('COMPANY_PHONE'),
-        issuerEmail: tenant?.email || this.configService.get('COMPANY_EMAIL'),
-        
+        issuerName: tenant?.name || this.configService.get("COMPANY_NAME"),
+        issuerCnpj: tenant?.cnpj || this.configService.get("COMPANY_CNPJ"),
+        issuerAddress:
+          tenant?.address || this.configService.get("COMPANY_ADDRESS"),
+        issuerCity: tenant?.city || this.configService.get("COMPANY_CITY"),
+        issuerState: tenant?.state || this.configService.get("COMPANY_STATE"),
+        issuerPhone: tenant?.phone || this.configService.get("COMPANY_PHONE"),
+        issuerEmail: tenant?.email || this.configService.get("COMPANY_EMAIL"),
+
         // Recipient info
         recipientName: customer?.name || dto.recipientName,
         recipientDoc: customer?.cpfCnpj || dto.recipientDoc,
-        recipientAddress: customer?.address ? `${customer.address}, ${customer.number || ''} ${customer.complement || ''}`.trim() : dto.recipientAddress,
+        recipientAddress: customer?.address
+          ? `${customer.address}, ${customer.number || ""} ${customer.complement || ""}`.trim()
+          : dto.recipientAddress,
         recipientCity: customer?.city || dto.recipientCity,
         recipientState: customer?.state || dto.recipientState,
         recipientPhone: customer?.phone || dto.recipientPhone,
         recipientEmail: customer?.email || dto.recipientEmail,
-        
+
         description: dto.description,
         items: JSON.stringify(items),
         notes: dto.notes,
         internalNotes: dto.internalNotes,
-        
+
         accessKey,
         qrCode,
-        
+
         warrantyDays: dto.warrantyDays,
         warrantyExpires,
       },
@@ -267,11 +287,15 @@ export class InvoicesService {
     return invoice;
   }
 
-  async sendToCustomer(id: string, tenantId: string, methods: ('email' | 'whatsapp')[] = ['email', 'whatsapp']) {
+  async sendToCustomer(
+    id: string,
+    tenantId: string,
+    methods: ("email" | "whatsapp")[] = ["email", "whatsapp"],
+  ) {
     const invoice = await this.findOne(id, tenantId);
 
     if (!invoice.customer) {
-      throw new BadRequestException('Nota fiscal não possui cliente vinculado');
+      throw new BadRequestException("Nota fiscal não possui cliente vinculado");
     }
 
     const customer = invoice.customer;
@@ -283,26 +307,35 @@ export class InvoicesService {
     });
 
     // Send to customer
-    if (methods.includes('email') && customer.email) {
+    if (methods.includes("email") && customer.email) {
       const emailResult = await this.notificationsService.sendInvoiceEmail(
         tenantId,
         customer.id,
         customer.email,
         invoice,
       );
-      results.push({ method: 'email', recipient: customer.email, ...emailResult });
+      results.push({
+        method: "email",
+        recipient: customer.email,
+        ...emailResult,
+      });
     }
 
-    if (methods.includes('whatsapp') && (customer.whatsapp || customer.phone)) {
+    if (methods.includes("whatsapp") && (customer.whatsapp || customer.phone)) {
       const phone = customer.whatsapp || customer.phone;
       if (phone) {
-        const whatsappResult = await this.notificationsService.sendInvoiceWhatsApp(
-          tenantId,
-          customer.id,
-          phone,
-          invoice,
-        );
-        results.push({ method: 'whatsapp', recipient: phone, ...whatsappResult });
+        const whatsappResult =
+          await this.notificationsService.sendInvoiceWhatsApp(
+            tenantId,
+            customer.id,
+            phone,
+            invoice,
+          );
+        results.push({
+          method: "whatsapp",
+          recipient: phone,
+          ...whatsappResult,
+        });
       }
     }
 
@@ -323,12 +356,12 @@ export class InvoicesService {
       data: {
         sentAt: new Date(),
         sentTo: customer.email || customer.phone,
-        sentMethod: methods.join(','),
+        sentMethod: methods.join(","),
       },
     });
 
     return {
-      message: 'Nota fiscal enviada com sucesso',
+      message: "Nota fiscal enviada com sucesso",
       results,
     };
   }
@@ -336,14 +369,14 @@ export class InvoicesService {
   async cancel(id: string, tenantId: string, reason: string) {
     const invoice = await this.findOne(id, tenantId);
 
-    if (invoice.status === 'CANCELLED') {
-      throw new BadRequestException('Nota fiscal já está cancelada');
+    if (invoice.status === "CANCELLED") {
+      throw new BadRequestException("Nota fiscal já está cancelada");
     }
 
     return this.prisma.invoice.update({
       where: { id },
       data: {
-        status: 'CANCELLED',
+        status: "CANCELLED",
         cancelledAt: new Date(),
         cancelReason: reason,
       },
@@ -353,28 +386,32 @@ export class InvoicesService {
   async delete(id: string, tenantId: string) {
     const invoice = await this.findOne(id, tenantId);
 
-    if (invoice.status === 'ISSUED' || invoice.status === 'SENT') {
-      throw new BadRequestException('Não é possível excluir uma nota fiscal já emitida. Cancele-a primeiro.');
+    if (invoice.status === "ISSUED" || invoice.status === "SENT") {
+      throw new BadRequestException(
+        "Não é possível excluir uma nota fiscal já emitida. Cancele-a primeiro.",
+      );
     }
 
     await this.prisma.invoice.delete({
       where: { id },
     });
 
-    return { message: 'Nota fiscal excluída com sucesso' };
+    return { message: "Nota fiscal excluída com sucesso" };
   }
 
   async generateFromSource(tenantId: string, dto: GenerateInvoiceDto) {
     // Validate that at least one source is provided
     if (!dto.saleId && !dto.serviceOrderId) {
-      throw new BadRequestException('É necessário informar uma venda ou ordem de serviço');
+      throw new BadRequestException(
+        "É necessário informar uma venda ou ordem de serviço",
+      );
     }
 
     let customerId: string | undefined;
     let items: any[] = [];
     let subtotal = 0;
     let discount = 0;
-    let description = '';
+    let description = "";
 
     // Get data from Sale
     if (dto.saleId) {
@@ -391,7 +428,7 @@ export class InvoicesService {
       });
 
       if (!sale) {
-        throw new NotFoundException('Venda não encontrada');
+        throw new NotFoundException("Venda não encontrada");
       }
 
       customerId = sale.customerId || undefined;
@@ -417,7 +454,7 @@ export class InvoicesService {
       });
 
       if (!serviceOrder) {
-        throw new NotFoundException('Ordem de serviço não encontrada');
+        throw new NotFoundException("Ordem de serviço não encontrada");
       }
 
       customerId = serviceOrder.customerId || undefined;
@@ -427,17 +464,17 @@ export class InvoicesService {
         unitPrice: Number(item.unitPrice),
         total: Number(item.total),
       }));
-      
+
       // Add labor cost if exists
       if (serviceOrder.laborCost && Number(serviceOrder.laborCost) > 0) {
         items.push({
-          description: 'Mão de obra',
+          description: "Mão de obra",
           quantity: 1,
           unitPrice: Number(serviceOrder.laborCost),
           total: Number(serviceOrder.laborCost),
         });
       }
-      
+
       subtotal = items.reduce((sum, item) => sum + item.total, 0);
       discount = Number(serviceOrder.discount || 0);
       description = `Nota fiscal referente à ordem de serviço #${serviceOrder.code}`;
@@ -458,10 +495,13 @@ export class InvoicesService {
     });
   }
 
-  async generatePdf(id: string, tenantId: string): Promise<{ buffer: Buffer; filename: string }> {
+  async generatePdf(
+    id: string,
+    tenantId: string,
+  ): Promise<{ buffer: Buffer; filename: string }> {
     const invoice = await this.findOne(id, tenantId);
     const html = this.generateInvoiceHtml(invoice, true);
-    
+
     // For now, return the HTML as a "pseudo-PDF" buffer
     // In production, use puppeteer or similar library
     // Example with puppeteer:
@@ -473,14 +513,18 @@ export class InvoicesService {
     // return { buffer: pdf, filename: `nota-${invoice.number}.pdf` };
 
     // Simplified version - returns HTML that can be printed as PDF
-    const buffer = Buffer.from(html, 'utf-8');
-    return { 
-      buffer, 
+    const buffer = Buffer.from(html, "utf-8");
+    return {
+      buffer,
       filename: `nota-${invoice.number}.html`,
     };
   }
 
-  async getInvoiceHtml(id: string, tenantId: string, forPrint: boolean = false) {
+  async getInvoiceHtml(
+    id: string,
+    tenantId: string,
+    forPrint: boolean = false,
+  ) {
     const invoice = await this.findOne(id, tenantId);
     return this.generateInvoiceHtml(invoice, forPrint);
   }
@@ -489,33 +533,36 @@ export class InvoicesService {
     // Simulated access key generation
     // In production, this would follow NF-e/NFS-e specifications
     const timestamp = Date.now().toString(36);
-    const random = uuidv4().replace(/-/g, '').substring(0, 8);
+    const random = uuidv4().replace(/-/g, "").substring(0, 8);
     return `SF${timestamp}${number}${random}`.toUpperCase();
   }
 
   private generateInvoiceHtml(invoice: any, forPrint: boolean = false): string {
-    const items = typeof invoice.items === 'string' 
-      ? JSON.parse(invoice.items) 
-      : invoice.items || [];
+    const items =
+      typeof invoice.items === "string"
+        ? JSON.parse(invoice.items)
+        : invoice.items || [];
 
     const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
       }).format(value);
     };
 
     const formatDate = (date: Date) => {
-      return new Date(date).toLocaleDateString('pt-BR');
+      return new Date(date).toLocaleDateString("pt-BR");
     };
 
-    const printScript = forPrint ? `
+    const printScript = forPrint
+      ? `
     <script>
       window.onload = function() {
         window.print();
       };
     </script>
-    ` : '';
+    `
+      : "";
 
     return `
 <!DOCTYPE html>
@@ -567,15 +614,15 @@ export class InvoicesService {
     <div class="header">
       <div style="display: flex; justify-content: space-between; align-items: start;">
         <div>
-          <h1>${invoice.issuerName || 'SmartFlux ERP'}</h1>
-          <p>CNPJ: ${invoice.issuerCnpj || 'Não informado'}</p>
-          <p>${invoice.issuerAddress || ''} - ${invoice.issuerCity || ''} / ${invoice.issuerState || ''}</p>
+          <h1>${invoice.issuerName || "SmartFlux ERP"}</h1>
+          <p>CNPJ: ${invoice.issuerCnpj || "Não informado"}</p>
+          <p>${invoice.issuerAddress || ""} - ${invoice.issuerCity || ""} / ${invoice.issuerState || ""}</p>
         </div>
         <div style="text-align: right;">
-          <span class="badge ${invoice.status === 'ISSUED' ? 'badge-issued' : 'badge-cancelled'}">
-            ${invoice.status === 'ISSUED' ? 'Emitida' : 'Cancelada'}
+          <span class="badge ${invoice.status === "ISSUED" ? "badge-issued" : "badge-cancelled"}">
+            ${invoice.status === "ISSUED" ? "Emitida" : "Cancelada"}
           </span>
-          ${invoice.warrantyDays ? `<span class="badge badge-warranty" style="margin-left: 5px;">Garantia ${invoice.warrantyDays} dias</span>` : ''}
+          ${invoice.warrantyDays ? `<span class="badge badge-warranty" style="margin-left: 5px;">Garantia ${invoice.warrantyDays} dias</span>` : ""}
         </div>
       </div>
     </div>
@@ -599,19 +646,19 @@ export class InvoicesService {
         <div class="grid">
           <div class="info-block">
             <h4>Nome/Razão Social</h4>
-            <p>${invoice.recipientName || 'Consumidor Final'}</p>
+            <p>${invoice.recipientName || "Consumidor Final"}</p>
           </div>
           <div class="info-block">
             <h4>CPF/CNPJ</h4>
-            <p>${invoice.recipientDoc || 'Não informado'}</p>
+            <p>${invoice.recipientDoc || "Não informado"}</p>
           </div>
           <div class="info-block">
             <h4>Endereço</h4>
-            <p>${invoice.recipientAddress || 'Não informado'}</p>
+            <p>${invoice.recipientAddress || "Não informado"}</p>
           </div>
           <div class="info-block">
             <h4>Cidade/UF</h4>
-            <p>${invoice.recipientCity || '-'} / ${invoice.recipientState || '-'}</p>
+            <p>${invoice.recipientCity || "-"} / ${invoice.recipientState || "-"}</p>
           </div>
         </div>
       </div>
@@ -628,14 +675,18 @@ export class InvoicesService {
             </tr>
           </thead>
           <tbody>
-            ${items.map((item: any) => `
+            ${items
+              .map(
+                (item: any) => `
               <tr>
                 <td>${item.description}</td>
                 <td class="text-right">${item.quantity}</td>
                 <td class="text-right">${formatCurrency(item.unitPrice)}</td>
                 <td class="text-right">${formatCurrency(item.total)}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
       </div>
@@ -645,44 +696,60 @@ export class InvoicesService {
           <span>Subtotal</span>
           <span>${formatCurrency(Number(invoice.subtotal))}</span>
         </div>
-        ${Number(invoice.discount) > 0 ? `
+        ${
+          Number(invoice.discount) > 0
+            ? `
         <div class="totals-row">
           <span>Desconto</span>
           <span style="color: #22c55e;">- ${formatCurrency(Number(invoice.discount))}</span>
         </div>
-        ` : ''}
-        ${Number(invoice.tax) > 0 ? `
+        `
+            : ""
+        }
+        ${
+          Number(invoice.tax) > 0
+            ? `
         <div class="totals-row">
           <span>Impostos</span>
           <span>${formatCurrency(Number(invoice.tax))}</span>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
         <div class="totals-row total">
           <span>TOTAL</span>
           <span>${formatCurrency(Number(invoice.total))}</span>
         </div>
       </div>
 
-      ${invoice.warrantyDays ? `
+      ${
+        invoice.warrantyDays
+          ? `
       <div class="warranty-box">
         <h4>⚠️ Garantia</h4>
         <p>Este produto/serviço possui garantia de <strong>${invoice.warrantyDays} dias</strong> 
         válida até <strong>${formatDate(invoice.warrantyExpires)}</strong>.</p>
         <p style="margin-top: 5px; font-size: 11px;">Guarde este documento para eventual necessidade de acionar a garantia.</p>
       </div>
-      ` : ''}
+      `
+          : ""
+      }
 
-      ${invoice.notes ? `
+      ${
+        invoice.notes
+          ? `
       <div class="section" style="margin-top: 20px;">
         <h3 class="section-title">Observações</h3>
         <p>${invoice.notes}</p>
       </div>
-      ` : ''}
+      `
+          : ""
+      }
 
       <div class="qr-section">
-        ${invoice.qrCode ? `<img src="${invoice.qrCode}" alt="QR Code" />` : ''}
+        ${invoice.qrCode ? `<img src="${invoice.qrCode}" alt="QR Code" />` : ""}
         <p>Chave de Acesso: ${invoice.accessKey}</p>
-        <p>Consulte a autenticidade em: ${this.configService.get('FRONTEND_URL')}/invoice/${invoice.accessKey}</p>
+        <p>Consulte a autenticidade em: ${this.configService.get("FRONTEND_URL")}/invoice/${invoice.accessKey}</p>
       </div>
     </div>
 

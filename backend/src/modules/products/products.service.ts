@@ -1,7 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { CreateProductDto, UpdateProductDto, ProductQueryDto, CreateVariationDto } from './dto/product.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import {
+  CreateProductDto,
+  UpdateProductDto,
+  ProductQueryDto,
+  CreateVariationDto,
+} from "./dto/product.dto";
 
 @Injectable()
 export class ProductsService {
@@ -11,17 +20,24 @@ export class ProductsService {
   ) {}
 
   async findAll(tenantId: string, query: ProductQueryDto) {
-    const { page = 1, limit = 20, search, categoryId, isActive, lowStock } = query;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      categoryId,
+      isActive,
+      lowStock,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: any = { tenantId };
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-        { barcode: { contains: search, mode: 'insensitive' } },
-        { importName: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
+        { sku: { contains: search, mode: "insensitive" } },
+        { barcode: { contains: search, mode: "insensitive" } },
+        { importName: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -56,7 +72,7 @@ export class ProductsService {
             select: { linkedProducts: true },
           },
         },
-        orderBy: { name: 'asc' },
+        orderBy: { name: "asc" },
       }),
       this.prisma.product.count({ where }),
     ]);
@@ -90,13 +106,13 @@ export class ProductsService {
         },
         stockMovements: {
           take: 10,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         },
       },
     });
 
     if (!product) {
-      throw new NotFoundException('Produto não encontrado');
+      throw new NotFoundException("Produto não encontrado");
     }
 
     return product;
@@ -123,14 +139,14 @@ export class ProductsService {
     // Check if SKU already exists
     const existingSku = await this.findBySku(dto.sku, tenantId);
     if (existingSku) {
-      throw new BadRequestException('SKU já está em uso');
+      throw new BadRequestException("SKU já está em uso");
     }
 
     // Check if barcode already exists
     if (dto.barcode) {
       const existingBarcode = await this.findByBarcode(dto.barcode, tenantId);
       if (existingBarcode) {
-        throw new BadRequestException('Código de barras já está em uso');
+        throw new BadRequestException("Código de barras já está em uso");
       }
     }
 
@@ -173,9 +189,9 @@ export class ProductsService {
         data: {
           tenantId,
           productId: product.id,
-          type: 'IN',
+          type: "IN",
           quantity: dto.stock,
-          reason: 'Estoque inicial',
+          reason: "Estoque inicial",
           previousStock: 0,
           newStock: dto.stock,
         },
@@ -192,7 +208,7 @@ export class ProductsService {
     if (dto.sku && dto.sku !== product.sku) {
       const existingSku = await this.findBySku(dto.sku, tenantId);
       if (existingSku) {
-        throw new BadRequestException('SKU já está em uso');
+        throw new BadRequestException("SKU já está em uso");
       }
     }
 
@@ -200,7 +216,7 @@ export class ProductsService {
     if (dto.stock !== undefined && dto.stock !== product.stock) {
       const previousStock = product.stock;
       const newStock = dto.stock;
-      const type = newStock > previousStock ? 'IN' : 'OUT';
+      const type = newStock > previousStock ? "IN" : "OUT";
       const quantity = Math.abs(newStock - previousStock);
 
       await this.prisma.stockMovement.create({
@@ -209,7 +225,7 @@ export class ProductsService {
           productId: id,
           type,
           quantity,
-          reason: 'Ajuste manual de estoque',
+          reason: "Ajuste manual de estoque",
           previousStock,
           newStock,
         },
@@ -218,11 +234,12 @@ export class ProductsService {
 
     // Prepara os dados para atualização, limpando campos vazios
     const data: any = {};
-    
+
     if (dto.sku !== undefined) data.sku = dto.sku;
     if (dto.barcode !== undefined) data.barcode = dto.barcode || null;
     if (dto.name !== undefined) data.name = dto.name;
-    if (dto.description !== undefined) data.description = dto.description || null;
+    if (dto.description !== undefined)
+      data.description = dto.description || null;
     if (dto.importName !== undefined) data.importName = dto.importName || null;
     if (dto.costPrice !== undefined) data.costPrice = dto.costPrice;
     if (dto.salePrice !== undefined) data.salePrice = dto.salePrice;
@@ -232,7 +249,8 @@ export class ProductsService {
     if (dto.unit !== undefined) data.unit = dto.unit || null;
     // categoryId vazio deve ser null, não string vazia
     if (dto.categoryId !== undefined) data.categoryId = dto.categoryId || null;
-    if (dto.linkedProductId !== undefined) data.linkedProductId = dto.linkedProductId || null;
+    if (dto.linkedProductId !== undefined)
+      data.linkedProductId = dto.linkedProductId || null;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
 
     return this.prisma.product.update({
@@ -258,39 +276,44 @@ export class ProductsService {
         where: { id },
         data: { isActive: false },
       });
-      return { message: 'Produto desativado (possui vendas vinculadas)' };
+      return { message: "Produto desativado (possui vendas vinculadas)" };
     }
 
     await this.prisma.product.delete({
       where: { id },
     });
 
-    return { message: 'Produto removido com sucesso' };
+    return { message: "Produto removido com sucesso" };
   }
 
-  async updateStock(id: string, tenantId: string, quantity: number, type: 'IN' | 'OUT' | 'ADJUSTMENT', reason?: string) {
+  async updateStock(
+    id: string,
+    tenantId: string,
+    quantity: number,
+    type: "IN" | "OUT" | "ADJUSTMENT",
+    reason?: string,
+  ) {
     const product = await this.findOne(id, tenantId);
     const previousStock = product.stock;
-    
+
     let newStock: number;
-    if (type === 'ADJUSTMENT') {
+    if (type === "ADJUSTMENT") {
       // Para ajuste, a quantidade é o novo valor absoluto do estoque
       newStock = quantity;
     } else {
-      newStock = type === 'IN' ? previousStock + quantity : previousStock - quantity;
+      newStock =
+        type === "IN" ? previousStock + quantity : previousStock - quantity;
     }
 
     if (newStock < 0) {
-      throw new BadRequestException('Estoque insuficiente');
+      throw new BadRequestException("Estoque insuficiente");
     }
 
-    const movementQuantity = type === 'ADJUSTMENT' 
-      ? Math.abs(newStock - previousStock) 
-      : quantity;
+    const movementQuantity =
+      type === "ADJUSTMENT" ? Math.abs(newStock - previousStock) : quantity;
 
-    const movementType = type === 'ADJUSTMENT'
-      ? (newStock > previousStock ? 'IN' : 'OUT')
-      : type;
+    const movementType =
+      type === "ADJUSTMENT" ? (newStock > previousStock ? "IN" : "OUT") : type;
 
     await this.prisma.$transaction([
       this.prisma.product.update({
@@ -303,9 +326,13 @@ export class ProductsService {
           productId: id,
           type: movementType,
           quantity: movementQuantity,
-          reason: reason || (type === 'ADJUSTMENT' 
-            ? 'Ajuste de estoque' 
-            : (type === 'IN' ? 'Entrada de estoque' : 'Saída de estoque')),
+          reason:
+            reason ||
+            (type === "ADJUSTMENT"
+              ? "Ajuste de estoque"
+              : type === "IN"
+                ? "Entrada de estoque"
+                : "Saída de estoque"),
           previousStock,
           newStock,
         },
@@ -315,48 +342,46 @@ export class ProductsService {
     // Check for low stock alert after stock update
     if (newStock <= product.minStock && newStock > 0) {
       // Send low stock alert (don't block the response)
-      this.notificationsService.sendLowStockAlert(tenantId, [product]).catch(error => {
-        console.error('Failed to send low stock alert:', error);
-      });
+      this.notificationsService
+        .sendLowStockAlert(tenantId, [product])
+        .catch((error) => {
+          console.error("Failed to send low stock alert:", error);
+        });
     }
 
     return { previousStock, newStock, quantity, type };
   }
 
   async getStats(tenantId: string) {
-    const [
-      totalProducts,
-      lowStockCount,
-      reviewCount,
-      totalValue,
-    ] = await Promise.all([
-      // Total de produtos ativos
-      this.prisma.product.count({
-        where: { tenantId, isActive: true },
-      }),
-      // Produtos com estoque baixo (estoque <= estoque mínimo)
-      this.prisma.product.count({
-        where: {
-          tenantId,
-          isActive: true,
-          OR: [
-            { stock: { lte: 5 } },
-            // Usando raw query para comparar stock com minStock
-          ],
-        },
-      }),
-      // Produtos pendentes de revisão
-      this.prisma.product.count({
-        where: { tenantId, importStatus: 'REVIEW' },
-      }),
-      // Valor total do estoque
-      this.prisma.product.aggregate({
-        where: { tenantId, isActive: true },
-        _sum: {
-          stock: true,
-        },
-      }),
-    ]);
+    const [totalProducts, lowStockCount, reviewCount, totalValue] =
+      await Promise.all([
+        // Total de produtos ativos
+        this.prisma.product.count({
+          where: { tenantId, isActive: true },
+        }),
+        // Produtos com estoque baixo (estoque <= estoque mínimo)
+        this.prisma.product.count({
+          where: {
+            tenantId,
+            isActive: true,
+            OR: [
+              { stock: { lte: 5 } },
+              // Usando raw query para comparar stock com minStock
+            ],
+          },
+        }),
+        // Produtos pendentes de revisão
+        this.prisma.product.count({
+          where: { tenantId, importStatus: "REVIEW" },
+        }),
+        // Valor total do estoque
+        this.prisma.product.aggregate({
+          where: { tenantId, isActive: true },
+          _sum: {
+            stock: true,
+          },
+        }),
+      ]);
 
     // Calcular valor total do estoque (soma de salePrice * stock)
     const products = await this.prisma.product.findMany({
@@ -364,7 +389,10 @@ export class ProductsService {
       select: { stock: true, salePrice: true },
     });
 
-    const stockValue = products.reduce((sum, p) => sum + (p.stock * Number(p.salePrice)), 0);
+    const stockValue = products.reduce(
+      (sum, p) => sum + p.stock * Number(p.salePrice),
+      0,
+    );
 
     // Buscar produtos com estoque menor ou igual ao minStock
     const lowStockProducts = await this.prisma.product.count({
@@ -397,7 +425,7 @@ export class ProductsService {
         stock: true,
         minStock: true,
       },
-      orderBy: { stock: 'asc' },
+      orderBy: { stock: "asc" },
       take: 20,
     });
   }
@@ -407,11 +435,11 @@ export class ProductsService {
     startDate.setDate(startDate.getDate() - days);
 
     const topProducts = await this.prisma.saleItem.groupBy({
-      by: ['productId'],
+      by: ["productId"],
       where: {
         sale: {
           tenantId,
-          status: 'COMPLETED',
+          status: "COMPLETED",
           createdAt: { gte: startDate },
         },
       },
@@ -421,7 +449,7 @@ export class ProductsService {
       },
       orderBy: {
         _sum: {
-          quantity: 'desc',
+          quantity: "desc",
         },
       },
       take: 10,
@@ -450,11 +478,15 @@ export class ProductsService {
 
   // === VARIAÇÕES ===
 
-  async createVariations(parentProductId: string, tenantId: string, variations: any[]) {
+  async createVariations(
+    parentProductId: string,
+    tenantId: string,
+    variations: any[],
+  ) {
     const parentProduct = await this.findOne(parentProductId, tenantId);
 
     if (!parentProduct) {
-      throw new NotFoundException('Produto pai não encontrado');
+      throw new NotFoundException("Produto pai não encontrado");
     }
 
     const createdVariations: any[] = [];
@@ -472,7 +504,10 @@ export class ProductsService {
       }
 
       // Criar nome da variação
-      const variationName = this.generateVariationName(parentProduct.name, variationData);
+      const variationName = this.generateVariationName(
+        parentProduct.name,
+        variationData,
+      );
 
       const variation = await this.prisma.product.create({
         data: {
@@ -539,9 +574,9 @@ export class ProductsService {
           data: {
             tenantId,
             productId: variation.id,
-            type: 'IN',
+            type: "IN",
             quantity: variation.stock,
-            reason: 'Estoque inicial - Variação',
+            reason: "Estoque inicial - Variação",
             previousStock: 0,
             newStock: variation.stock,
           },
@@ -556,16 +591,22 @@ export class ProductsService {
       where: { id: parentProductId },
       data: {
         isMainProduct: true,
-        variationAttributes: variations[0] ? Object.keys(variations[0]).filter(key =>
-          ['color', 'size'].includes(key) && variations[0][key]
-        ) : []
+        variationAttributes: variations[0]
+          ? Object.keys(variations[0]).filter(
+              (key) => ["color", "size"].includes(key) && variations[0][key],
+            )
+          : [],
       },
     });
 
     return createdVariations;
   }
 
-  async createVariation(parentProductId: string, tenantId: string, dto: CreateVariationDto) {
+  async createVariation(
+    parentProductId: string,
+    tenantId: string,
+    dto: CreateVariationDto,
+  ) {
     return this.createVariations(parentProductId, tenantId, [dto]);
   }
 
@@ -584,7 +625,7 @@ export class ProductsService {
           select: { stockMovements: true },
         },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: "asc" },
     });
   }
 
@@ -592,7 +633,7 @@ export class ProductsService {
     const variation = await this.findOne(id, tenantId);
 
     if (!variation.isVariation) {
-      throw new BadRequestException('Este produto não é uma variação');
+      throw new BadRequestException("Este produto não é uma variação");
     }
 
     return this.update(id, tenantId, dto);
@@ -602,7 +643,7 @@ export class ProductsService {
     const variation = await this.findOne(id, tenantId);
 
     if (!variation.isVariation) {
-      throw new BadRequestException('Este produto não é uma variação');
+      throw new BadRequestException("Este produto não é uma variação");
     }
 
     // Verificar se tem vendas
@@ -611,27 +652,31 @@ export class ProductsService {
     });
 
     if (salesCount > 0) {
-      throw new BadRequestException('Não é possível excluir variação com vendas registradas');
+      throw new BadRequestException(
+        "Não é possível excluir variação com vendas registradas",
+      );
     }
 
     await this.prisma.product.delete({
       where: { id },
     });
 
-    return { message: 'Variação excluída com sucesso' };
+    return { message: "Variação excluída com sucesso" };
   }
 
   private generateVariationSuffix(variationData: any): string {
     const parts: string[] = [];
-    if (variationData.color) parts.push(variationData.color.toLowerCase().replace(/\s+/g, ''));
-    if (variationData.size) parts.push(variationData.size.toLowerCase().replace(/\s+/g, ''));
-    return parts.join('-') || 'var';
+    if (variationData.color)
+      parts.push(variationData.color.toLowerCase().replace(/\s+/g, ""));
+    if (variationData.size)
+      parts.push(variationData.size.toLowerCase().replace(/\s+/g, ""));
+    return parts.join("-") || "var";
   }
 
   private generateVariationName(baseName: string, variationData: any): string {
     const parts: string[] = [baseName];
     if (variationData.color) parts.push(variationData.color);
     if (variationData.size) parts.push(variationData.size);
-    return parts.join(' - ');
+    return parts.join(" - ");
   }
 }

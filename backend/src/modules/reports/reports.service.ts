@@ -1,8 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { ReportFiltersDto } from './dto/reports.dto';
-import { startOfDay, endOfDay, parseISO, subDays, subMonths } from 'date-fns';
-import * as ExcelJS from 'exceljs';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { ReportFiltersDto } from "./dto/reports.dto";
+import { startOfDay, endOfDay, parseISO, subDays, subMonths } from "date-fns";
+import * as ExcelJS from "exceljs";
 
 @Injectable()
 export class ReportsService {
@@ -36,7 +40,7 @@ export class ReportsService {
     // Customer search filter
     if (filters.customer) {
       where.customer = {
-        name: { contains: filters.customer, mode: 'insensitive' },
+        name: { contains: filters.customer, mode: "insensitive" },
       };
     }
 
@@ -50,30 +54,40 @@ export class ReportsService {
     const sales = await this.prisma.sale.findMany({
       where,
       include: {
-        customer: { select: { id: true, name: true, email: true, phone: true } },
+        customer: {
+          select: { id: true, name: true, email: true, phone: true },
+        },
         items: {
           include: {
             product: { select: { id: true, name: true, sku: true } },
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     // Calculate summary
     const totalSales = sales.reduce((sum, s) => sum + Number(s.total), 0);
-    const totalItems = sales.reduce((sum, s) => sum + s.items.reduce((iSum, i) => iSum + i.quantity, 0), 0);
-    const completedSales = sales.filter(s => s.status === 'COMPLETED');
-    
+    const totalItems = sales.reduce(
+      (sum, s) => sum + s.items.reduce((iSum, i) => iSum + i.quantity, 0),
+      0,
+    );
+    const completedSales = sales.filter((s) => s.status === "COMPLETED");
+
     // Calculate growth compared to previous period
     let salesGrowth = 0;
     if (filters.periodStart && filters.periodEnd) {
       const periodDays = Math.ceil(
-        (parseISO(filters.periodEnd).getTime() - parseISO(filters.periodStart).getTime()) / (1000 * 60 * 60 * 24)
+        (parseISO(filters.periodEnd).getTime() -
+          parseISO(filters.periodStart).getTime()) /
+          (1000 * 60 * 60 * 24),
       );
-      const previousPeriodStart = subDays(parseISO(filters.periodStart), periodDays);
+      const previousPeriodStart = subDays(
+        parseISO(filters.periodStart),
+        periodDays,
+      );
       const previousPeriodEnd = subDays(parseISO(filters.periodStart), 1);
-      
+
       const previousSales = await this.prisma.sale.aggregate({
         where: {
           tenantId,
@@ -110,23 +124,23 @@ export class ReportsService {
     // Category filter
     if (filters.category) {
       where.category = {
-        name: { contains: filters.category, mode: 'insensitive' },
+        name: { contains: filters.category, mode: "insensitive" },
       };
     }
 
     // Stock status filter
     if (filters.stockStatus) {
       switch (filters.stockStatus) {
-        case 'out':
+        case "out":
           where.stock = { lte: 0 };
           break;
-        case 'low':
+        case "low":
           where.AND = [
             { stock: { gt: 0 } },
             { stock: { lte: this.prisma.product.fields.minStock } },
           ];
           break;
-        case 'normal':
+        case "normal":
           where.stock = { gt: 0 };
           break;
       }
@@ -148,33 +162,41 @@ export class ReportsService {
     // Get sales data for period
     let salesData: Record<string, { quantity: number; revenue: number }> = {};
     if (filters.periodStart || filters.periodEnd) {
-      const salesWhere: any = { 
+      const salesWhere: any = {
         sale: { tenantId },
       };
       if (filters.periodStart) {
-        salesWhere.sale.createdAt = { gte: startOfDay(parseISO(filters.periodStart)) };
+        salesWhere.sale.createdAt = {
+          gte: startOfDay(parseISO(filters.periodStart)),
+        };
       }
       if (filters.periodEnd) {
-        salesWhere.sale.createdAt = { ...salesWhere.sale?.createdAt, lte: endOfDay(parseISO(filters.periodEnd)) };
+        salesWhere.sale.createdAt = {
+          ...salesWhere.sale?.createdAt,
+          lte: endOfDay(parseISO(filters.periodEnd)),
+        };
       }
 
       const saleItems = await this.prisma.saleItem.groupBy({
-        by: ['productId'],
+        by: ["productId"],
         _sum: { quantity: true, total: true },
         where: salesWhere,
       });
 
-      salesData = saleItems.reduce((acc, item) => {
-        acc[item.productId] = {
-          quantity: item._sum.quantity || 0,
-          revenue: Number(item._sum.total || 0),
-        };
-        return acc;
-      }, {} as Record<string, { quantity: number; revenue: number }>);
+      salesData = saleItems.reduce(
+        (acc, item) => {
+          acc[item.productId] = {
+            quantity: item._sum.quantity || 0,
+            revenue: Number(item._sum.total || 0),
+          };
+          return acc;
+        },
+        {} as Record<string, { quantity: number; revenue: number }>,
+      );
     }
 
     // Map products with sales data
-    const productsWithSales = products.map(product => ({
+    const productsWithSales = products.map((product) => ({
       ...product,
       soldQuantity: salesData[product.id]?.quantity || 0,
       revenue: salesData[product.id]?.revenue || 0,
@@ -184,13 +206,13 @@ export class ReportsService {
     if (filters.sortBy) {
       productsWithSales.sort((a, b) => {
         switch (filters.sortBy) {
-          case 'sales':
+          case "sales":
             return b.soldQuantity - a.soldQuantity;
-          case 'revenue':
+          case "revenue":
             return b.revenue - a.revenue;
-          case 'stock':
+          case "stock":
             return b.stock - a.stock;
-          case 'name':
+          case "name":
             return a.name.localeCompare(b.name);
           default:
             return 0;
@@ -200,9 +222,14 @@ export class ReportsService {
 
     // Summary
     const totalProducts = products.length;
-    const stockValue = products.reduce((sum, p) => sum + (p.stock * Number(p.costPrice || p.salePrice)), 0);
-    const lowStockCount = products.filter(p => p.stock > 0 && p.stock <= p.minStock).length;
-    const outOfStockCount = products.filter(p => p.stock <= 0).length;
+    const stockValue = products.reduce(
+      (sum, p) => sum + p.stock * Number(p.costPrice || p.salePrice),
+      0,
+    );
+    const lowStockCount = products.filter(
+      (p) => p.stock > 0 && p.stock <= p.minStock,
+    ).length;
+    const outOfStockCount = products.filter((p) => p.stock <= 0).length;
 
     return {
       summary: {
@@ -222,9 +249,9 @@ export class ReportsService {
     // Search filter
     if (filters.search) {
       where.OR = [
-        { name: { contains: filters.search, mode: 'insensitive' } },
-        { email: { contains: filters.search, mode: 'insensitive' } },
-        { phone: { contains: filters.search, mode: 'insensitive' } },
+        { name: { contains: filters.search, mode: "insensitive" } },
+        { email: { contains: filters.search, mode: "insensitive" } },
+        { phone: { contains: filters.search, mode: "insensitive" } },
       ];
     }
 
@@ -237,14 +264,14 @@ export class ReportsService {
 
     // Get sales data per customer
     const salesByCustomer = await this.prisma.sale.groupBy({
-      by: ['customerId'],
+      by: ["customerId"],
       _sum: { total: true },
       _count: true,
       _max: { createdAt: true },
       where: {
         tenantId,
         customerId: { not: null },
-        status: 'COMPLETED',
+        status: "COMPLETED",
         ...(filters.periodStart && {
           createdAt: { gte: startOfDay(parseISO(filters.periodStart)) },
         }),
@@ -254,19 +281,25 @@ export class ReportsService {
       },
     });
 
-    const salesMap = salesByCustomer.reduce((acc, item) => {
-      if (item.customerId) {
-        acc[item.customerId] = {
-          totalSpent: Number(item._sum.total || 0),
-          orderCount: item._count,
-          lastOrderDate: item._max.createdAt,
-        };
-      }
-      return acc;
-    }, {} as Record<string, { totalSpent: number; orderCount: number; lastOrderDate: Date | null }>);
+    const salesMap = salesByCustomer.reduce(
+      (acc, item) => {
+        if (item.customerId) {
+          acc[item.customerId] = {
+            totalSpent: Number(item._sum.total || 0),
+            orderCount: item._count,
+            lastOrderDate: item._max.createdAt,
+          };
+        }
+        return acc;
+      },
+      {} as Record<
+        string,
+        { totalSpent: number; orderCount: number; lastOrderDate: Date | null }
+      >,
+    );
 
     // Map customers with sales data
-    let customersWithSales = customers.map(customer => ({
+    let customersWithSales = customers.map((customer) => ({
       ...customer,
       totalSpent: salesMap[customer.id]?.totalSpent || 0,
       orderCount: salesMap[customer.id]?.orderCount || 0,
@@ -275,14 +308,16 @@ export class ReportsService {
 
     // Filter by orders
     if (filters.hasOrders) {
-      customersWithSales = customersWithSales.filter(c => c.orderCount > 0);
+      customersWithSales = customersWithSales.filter((c) => c.orderCount > 0);
     }
 
     // Filter by total spent
     if (filters.totalSpentMin || filters.totalSpentMax) {
-      customersWithSales = customersWithSales.filter(c => {
-        if (filters.totalSpentMin && c.totalSpent < filters.totalSpentMin) return false;
-        if (filters.totalSpentMax && c.totalSpent > filters.totalSpentMax) return false;
+      customersWithSales = customersWithSales.filter((c) => {
+        if (filters.totalSpentMin && c.totalSpent < filters.totalSpentMin)
+          return false;
+        if (filters.totalSpentMax && c.totalSpent > filters.totalSpentMax)
+          return false;
         return true;
       });
     }
@@ -291,13 +326,16 @@ export class ReportsService {
     if (filters.sortBy) {
       customersWithSales.sort((a, b) => {
         switch (filters.sortBy) {
-          case 'totalSpent':
+          case "totalSpent":
             return b.totalSpent - a.totalSpent;
-          case 'orderCount':
+          case "orderCount":
             return b.orderCount - a.orderCount;
-          case 'lastOrder':
-            return (b.lastOrderDate?.getTime() || 0) - (a.lastOrderDate?.getTime() || 0);
-          case 'name':
+          case "lastOrder":
+            return (
+              (b.lastOrderDate?.getTime() || 0) -
+              (a.lastOrderDate?.getTime() || 0)
+            );
+          case "name":
             return a.name.localeCompare(b.name);
           default:
             return 0;
@@ -306,8 +344,13 @@ export class ReportsService {
     }
 
     // Summary
-    const totalRevenue = customersWithSales.reduce((sum, c) => sum + c.totalSpent, 0);
-    const activeCustomers = customersWithSales.filter(c => c.orderCount > 0).length;
+    const totalRevenue = customersWithSales.reduce(
+      (sum, c) => sum + c.totalSpent,
+      0,
+    );
+    const activeCustomers = customersWithSales.filter(
+      (c) => c.orderCount > 0,
+    ).length;
 
     return {
       summary: {
@@ -346,24 +389,37 @@ export class ReportsService {
 
     // Category filter
     if (filters.category) {
-      where.category = { contains: filters.category, mode: 'insensitive' };
+      where.category = { contains: filters.category, mode: "insensitive" };
     }
 
     const transactions = await this.prisma.transaction.findMany({
       where,
-      orderBy: { dueDate: 'desc' },
+      orderBy: { dueDate: "desc" },
     });
 
     // Calculate summary
-    const incomeTransactions = transactions.filter(t => t.type === 'INCOME');
-    const expenseTransactions = transactions.filter(t => t.type === 'EXPENSE');
-    
-    const totalIncome = incomeTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
-    const totalExpenses = expenseTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+    const incomeTransactions = transactions.filter((t) => t.type === "INCOME");
+    const expenseTransactions = transactions.filter(
+      (t) => t.type === "EXPENSE",
+    );
+
+    const totalIncome = incomeTransactions.reduce(
+      (sum, t) => sum + Number(t.amount),
+      0,
+    );
+    const totalExpenses = expenseTransactions.reduce(
+      (sum, t) => sum + Number(t.amount),
+      0,
+    );
     const balance = totalIncome - totalExpenses;
-    
-    const pendingTransactions = transactions.filter(t => t.status === 'PENDING');
-    const pendingAmount = pendingTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const pendingTransactions = transactions.filter(
+      (t) => t.status === "PENDING",
+    );
+    const pendingAmount = pendingTransactions.reduce(
+      (sum, t) => sum + Number(t.amount),
+      0,
+    );
 
     return {
       summary: {
@@ -377,7 +433,10 @@ export class ReportsService {
   }
 
   // ========== SERVICE ORDERS REPORT ==========
-  async generateServiceOrdersReport(tenantId: string, filters: ReportFiltersDto) {
+  async generateServiceOrdersReport(
+    tenantId: string,
+    filters: ReportFiltersDto,
+  ) {
     const where: any = { tenantId };
 
     // Date filter
@@ -408,7 +467,7 @@ export class ReportsService {
     // Technician filter
     if (filters.technician) {
       where.user = {
-        name: { contains: filters.technician, mode: 'insensitive' },
+        name: { contains: filters.technician, mode: "insensitive" },
       };
     }
 
@@ -418,15 +477,19 @@ export class ReportsService {
         customer: { select: { id: true, name: true, phone: true } },
         user: { select: { id: true, name: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     // Summary
     const total = serviceOrders.length;
-    const completed = serviceOrders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED').length;
-    const inProgress = serviceOrders.filter(o => o.status === 'IN_PROGRESS').length;
+    const completed = serviceOrders.filter(
+      (o) => o.status === "COMPLETED" || o.status === "DELIVERED",
+    ).length;
+    const inProgress = serviceOrders.filter(
+      (o) => o.status === "IN_PROGRESS",
+    ).length;
     const revenue = serviceOrders
-      .filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED')
+      .filter((o) => o.status === "COMPLETED" || o.status === "DELIVERED")
       .reduce((sum, o) => sum + Number(o.total), 0);
 
     return {
@@ -481,15 +544,17 @@ export class ReportsService {
       include: {
         customer: { select: { id: true, name: true } },
       },
-      orderBy: { issueDate: 'desc' },
+      orderBy: { issueDate: "desc" },
     });
 
     // Summary
     const total = invoices.length;
-    const issued = invoices.filter(i => i.status === 'ISSUED' || i.status === 'SENT').length;
-    const cancelled = invoices.filter(i => i.status === 'CANCELLED').length;
+    const issued = invoices.filter(
+      (i) => i.status === "ISSUED" || i.status === "SENT",
+    ).length;
+    const cancelled = invoices.filter((i) => i.status === "CANCELLED").length;
     const totalValue = invoices
-      .filter(i => i.status !== 'CANCELLED')
+      .filter((i) => i.status !== "CANCELLED")
       .reduce((sum, i) => sum + Number(i.total), 0);
 
     return {
@@ -506,7 +571,7 @@ export class ReportsService {
   // ========== EXPORT TO EXCEL ==========
   async exportToExcel(reportType: string, data: any): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Relatório');
+    const worksheet = workbook.addWorksheet("Relatório");
 
     // Get columns based on report type
     const columns = this.getColumnsForReport(reportType);
@@ -515,11 +580,11 @@ export class ReportsService {
     // Add header style
     worksheet.getRow(1).font = { bold: true };
     worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF4F46E5' },
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF4F46E5" },
     };
-    worksheet.getRow(1).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+    worksheet.getRow(1).font = { color: { argb: "FFFFFFFF" }, bold: true };
 
     // Add data rows
     data.items?.forEach((item: any) => {
@@ -528,10 +593,10 @@ export class ReportsService {
     });
 
     // Auto-fit columns
-    worksheet.columns.forEach(column => {
+    worksheet.columns.forEach((column) => {
       if (column.width) return;
       let maxLength = 0;
-      column.eachCell?.({ includeEmpty: true }, cell => {
+      column.eachCell?.({ includeEmpty: true }, (cell) => {
         const columnLength = cell.value ? cell.value.toString().length : 10;
         if (columnLength > maxLength) {
           maxLength = columnLength;
@@ -546,60 +611,60 @@ export class ReportsService {
 
   private getColumnsForReport(reportType: string): Partial<ExcelJS.Column>[] {
     switch (reportType) {
-      case 'sales':
+      case "sales":
         return [
-          { header: 'Código', key: 'code', width: 15 },
-          { header: 'Data', key: 'date', width: 15 },
-          { header: 'Cliente', key: 'customer', width: 30 },
-          { header: 'Pagamento', key: 'paymentMethod', width: 15 },
-          { header: 'Status', key: 'status', width: 15 },
-          { header: 'Total', key: 'total', width: 15 },
+          { header: "Código", key: "code", width: 15 },
+          { header: "Data", key: "date", width: 15 },
+          { header: "Cliente", key: "customer", width: 30 },
+          { header: "Pagamento", key: "paymentMethod", width: 15 },
+          { header: "Status", key: "status", width: 15 },
+          { header: "Total", key: "total", width: 15 },
         ];
-      case 'products':
+      case "products":
         return [
-          { header: 'SKU', key: 'sku', width: 15 },
-          { header: 'Produto', key: 'name', width: 40 },
-          { header: 'Categoria', key: 'category', width: 20 },
-          { header: 'Estoque', key: 'stock', width: 10 },
-          { header: 'Vendidos', key: 'sold', width: 10 },
-          { header: 'Preço', key: 'price', width: 15 },
-          { header: 'Faturamento', key: 'revenue', width: 15 },
+          { header: "SKU", key: "sku", width: 15 },
+          { header: "Produto", key: "name", width: 40 },
+          { header: "Categoria", key: "category", width: 20 },
+          { header: "Estoque", key: "stock", width: 10 },
+          { header: "Vendidos", key: "sold", width: 10 },
+          { header: "Preço", key: "price", width: 15 },
+          { header: "Faturamento", key: "revenue", width: 15 },
         ];
-      case 'customers':
+      case "customers":
         return [
-          { header: 'Nome', key: 'name', width: 30 },
-          { header: 'Email', key: 'email', width: 30 },
-          { header: 'Telefone', key: 'phone', width: 20 },
-          { header: 'Pedidos', key: 'orders', width: 10 },
-          { header: 'Total Gasto', key: 'totalSpent', width: 15 },
-          { header: 'Última Compra', key: 'lastOrder', width: 15 },
+          { header: "Nome", key: "name", width: 30 },
+          { header: "Email", key: "email", width: 30 },
+          { header: "Telefone", key: "phone", width: 20 },
+          { header: "Pedidos", key: "orders", width: 10 },
+          { header: "Total Gasto", key: "totalSpent", width: 15 },
+          { header: "Última Compra", key: "lastOrder", width: 15 },
         ];
-      case 'financial':
+      case "financial":
         return [
-          { header: 'Data', key: 'date', width: 15 },
-          { header: 'Descrição', key: 'description', width: 40 },
-          { header: 'Categoria', key: 'category', width: 20 },
-          { header: 'Tipo', key: 'type', width: 10 },
-          { header: 'Status', key: 'status', width: 15 },
-          { header: 'Valor', key: 'amount', width: 15 },
+          { header: "Data", key: "date", width: 15 },
+          { header: "Descrição", key: "description", width: 40 },
+          { header: "Categoria", key: "category", width: 20 },
+          { header: "Tipo", key: "type", width: 10 },
+          { header: "Status", key: "status", width: 15 },
+          { header: "Valor", key: "amount", width: 15 },
         ];
-      case 'serviceOrders':
+      case "serviceOrders":
         return [
-          { header: 'Código', key: 'code', width: 15 },
-          { header: 'Cliente', key: 'customer', width: 30 },
-          { header: 'Título', key: 'title', width: 40 },
-          { header: 'Status', key: 'status', width: 15 },
-          { header: 'Prioridade', key: 'priority', width: 15 },
-          { header: 'Total', key: 'total', width: 15 },
+          { header: "Código", key: "code", width: 15 },
+          { header: "Cliente", key: "customer", width: 30 },
+          { header: "Título", key: "title", width: 40 },
+          { header: "Status", key: "status", width: 15 },
+          { header: "Prioridade", key: "priority", width: 15 },
+          { header: "Total", key: "total", width: 15 },
         ];
-      case 'invoices':
+      case "invoices":
         return [
-          { header: 'Número', key: 'number', width: 15 },
-          { header: 'Tipo', key: 'type', width: 15 },
-          { header: 'Cliente', key: 'customer', width: 30 },
-          { header: 'Data', key: 'date', width: 15 },
-          { header: 'Status', key: 'status', width: 15 },
-          { header: 'Valor', key: 'total', width: 15 },
+          { header: "Número", key: "number", width: 15 },
+          { header: "Tipo", key: "type", width: 15 },
+          { header: "Cliente", key: "customer", width: 30 },
+          { header: "Data", key: "date", width: 15 },
+          { header: "Status", key: "status", width: 15 },
+          { header: "Valor", key: "total", width: 15 },
         ];
       default:
         return [];
@@ -608,57 +673,58 @@ export class ReportsService {
 
   private mapItemToRow(reportType: string, item: any): Record<string, any> {
     switch (reportType) {
-      case 'sales':
+      case "sales":
         return {
           code: item.code,
           date: item.createdAt,
-          customer: item.customer?.name || 'Consumidor Final',
+          customer: item.customer?.name || "Consumidor Final",
           paymentMethod: item.paymentMethod,
           status: item.status,
           total: Number(item.total),
         };
-      case 'products':
+      case "products":
         return {
           sku: item.sku,
           name: item.name,
-          category: item.category?.name || '-',
+          category: item.category?.name || "-",
           stock: item.stock,
           sold: item.soldQuantity || 0,
           price: Number(item.salePrice),
           revenue: item.revenue || 0,
         };
-      case 'customers':
+      case "customers":
         return {
           name: item.name,
-          email: item.email || '-',
-          phone: item.phone || '-',
+          email: item.email || "-",
+          phone: item.phone || "-",
           orders: item.orderCount || 0,
           totalSpent: item.totalSpent || 0,
-          lastOrder: item.lastOrderDate || '-',
+          lastOrder: item.lastOrderDate || "-",
         };
-      case 'financial':
+      case "financial":
         return {
           date: item.dueDate || item.createdAt,
           description: item.description,
-          category: item.category || '-',
+          category: item.category || "-",
           type: item.type,
           status: item.status,
           amount: Number(item.amount),
         };
-      case 'serviceOrders':
+      case "serviceOrders":
         return {
           code: item.code,
-          customer: item.customer?.name || '-',
+          customer: item.customer?.name || "-",
           title: item.title,
           status: item.status,
           priority: item.priority,
           total: Number(item.total),
         };
-      case 'invoices':
+      case "invoices":
         return {
           number: item.number,
           type: item.type,
-          customer: item.customer?.name || item.recipientName || 'Consumidor Final',
+          customer:
+            item.customer?.name || item.recipientName || "Consumidor Final",
           date: item.issueDate,
           status: item.status,
           total: Number(item.total),
@@ -669,11 +735,16 @@ export class ReportsService {
   }
 
   // ========== GENERATE PDF HTML ==========
-  generatePdfHtml(reportType: string, data: any, filters: ReportFiltersDto): string {
+  generatePdfHtml(
+    reportType: string,
+    data: any,
+    filters: ReportFiltersDto,
+  ): string {
     const reportTitle = this.getReportTitle(reportType);
-    const periodText = filters.periodStart && filters.periodEnd
-      ? `Período: ${filters.periodStart} a ${filters.periodEnd}`
-      : '';
+    const periodText =
+      filters.periodStart && filters.periodEnd
+        ? `Período: ${filters.periodStart} a ${filters.periodEnd}`
+        : "";
 
     return `
       <!DOCTYPE html>
@@ -708,7 +779,7 @@ export class ReportsService {
           <h1>SmartFlux ERP</h1>
           <h2>${reportTitle}</h2>
           <p>${periodText}</p>
-          <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+          <p>Gerado em: ${new Date().toLocaleString("pt-BR")}</p>
         </div>
         
         ${this.generateSummaryHtml(reportType, data.summary)}
@@ -724,25 +795,28 @@ export class ReportsService {
 
   private getReportTitle(reportType: string): string {
     const titles: Record<string, string> = {
-      sales: 'Relatório de Vendas',
-      products: 'Relatório de Produtos',
-      customers: 'Relatório de Clientes',
-      financial: 'Relatório Financeiro',
-      serviceOrders: 'Relatório de Ordens de Serviço',
-      invoices: 'Relatório de Notas Fiscais',
+      sales: "Relatório de Vendas",
+      products: "Relatório de Produtos",
+      customers: "Relatório de Clientes",
+      financial: "Relatório Financeiro",
+      serviceOrders: "Relatório de Ordens de Serviço",
+      invoices: "Relatório de Notas Fiscais",
     };
-    return titles[reportType] || 'Relatório';
+    return titles[reportType] || "Relatório";
   }
 
   private generateSummaryHtml(reportType: string, summary: any): string {
-    if (!summary) return '';
+    if (!summary) return "";
 
-    const formatCurrency = (v: number) => 
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const formatCurrency = (v: number) =>
+      new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(v);
 
-    let cards = '';
+    let cards = "";
     switch (reportType) {
-      case 'sales':
+      case "sales":
         cards = `
           <div class="summary-card"><h3>Total em Vendas</h3><p>${formatCurrency(summary.totalSales || 0)}</p></div>
           <div class="summary-card"><h3>Nº de Vendas</h3><p>${summary.totalOrders || 0}</p></div>
@@ -750,7 +824,7 @@ export class ReportsService {
           <div class="summary-card"><h3>Itens Vendidos</h3><p>${summary.totalItems || 0}</p></div>
         `;
         break;
-      case 'products':
+      case "products":
         cards = `
           <div class="summary-card"><h3>Total de Produtos</h3><p>${summary.totalProducts || 0}</p></div>
           <div class="summary-card"><h3>Valor em Estoque</h3><p>${formatCurrency(summary.stockValue || 0)}</p></div>
@@ -758,14 +832,14 @@ export class ReportsService {
           <div class="summary-card"><h3>Sem Estoque</h3><p>${summary.outOfStockCount || 0}</p></div>
         `;
         break;
-      case 'customers':
+      case "customers":
         cards = `
           <div class="summary-card"><h3>Total de Clientes</h3><p>${summary.totalCustomers || 0}</p></div>
           <div class="summary-card"><h3>Clientes Ativos</h3><p>${summary.activeCustomers || 0}</p></div>
           <div class="summary-card"><h3>Receita Total</h3><p>${formatCurrency(summary.totalRevenue || 0)}</p></div>
         `;
         break;
-      case 'financial':
+      case "financial":
         cards = `
           <div class="summary-card"><h3>Receitas</h3><p style="color: green">${formatCurrency(summary.totalIncome || 0)}</p></div>
           <div class="summary-card"><h3>Despesas</h3><p style="color: red">${formatCurrency(summary.totalExpenses || 0)}</p></div>
@@ -773,7 +847,7 @@ export class ReportsService {
           <div class="summary-card"><h3>Pendentes</h3><p style="color: orange">${formatCurrency(summary.pendingAmount || 0)}</p></div>
         `;
         break;
-      case 'serviceOrders':
+      case "serviceOrders":
         cards = `
           <div class="summary-card"><h3>Total de OS</h3><p>${summary.total || 0}</p></div>
           <div class="summary-card"><h3>Concluídas</h3><p>${summary.completed || 0}</p></div>
@@ -781,7 +855,7 @@ export class ReportsService {
           <div class="summary-card"><h3>Faturamento</h3><p>${formatCurrency(summary.revenue || 0)}</p></div>
         `;
         break;
-      case 'invoices':
+      case "invoices":
         cards = `
           <div class="summary-card"><h3>Total de Notas</h3><p>${summary.total || 0}</p></div>
           <div class="summary-card"><h3>Emitidas</h3><p>${summary.issued || 0}</p></div>
@@ -795,105 +869,138 @@ export class ReportsService {
   }
 
   private generateTableHtml(reportType: string, items: any[]): string {
-    if (!items || items.length === 0) return '<p>Nenhum dado encontrado.</p>';
+    if (!items || items.length === 0) return "<p>Nenhum dado encontrado.</p>";
 
-    const formatCurrency = (v: number) => 
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-    
+    const formatCurrency = (v: number) =>
+      new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(v);
+
     const formatDate = (d: string | Date) => {
-      if (!d) return '-';
-      const date = typeof d === 'string' ? new Date(d) : d;
-      return date.toLocaleDateString('pt-BR');
+      if (!d) return "-";
+      const date = typeof d === "string" ? new Date(d) : d;
+      return date.toLocaleDateString("pt-BR");
     };
 
-    let headers = '';
-    let rows = '';
+    let headers = "";
+    let rows = "";
 
     switch (reportType) {
-      case 'sales':
-        headers = '<th>Código</th><th>Data</th><th>Cliente</th><th>Pagamento</th><th>Status</th><th class="text-right">Total</th>';
-        rows = items.map(item => `
+      case "sales":
+        headers =
+          '<th>Código</th><th>Data</th><th>Cliente</th><th>Pagamento</th><th>Status</th><th class="text-right">Total</th>';
+        rows = items
+          .map(
+            (item) => `
           <tr>
             <td>#${item.code}</td>
             <td>${formatDate(item.createdAt)}</td>
-            <td>${item.customer?.name || 'Consumidor Final'}</td>
+            <td>${item.customer?.name || "Consumidor Final"}</td>
             <td>${item.paymentMethod}</td>
             <td>${item.status}</td>
             <td class="text-right">${formatCurrency(Number(item.total))}</td>
           </tr>
-        `).join('');
+        `,
+          )
+          .join("");
         break;
-      
-      case 'products':
-        headers = '<th>SKU</th><th>Produto</th><th>Categoria</th><th class="text-center">Estoque</th><th class="text-center">Vendidos</th><th class="text-right">Preço</th><th class="text-right">Faturamento</th>';
-        rows = items.map(item => `
+
+      case "products":
+        headers =
+          '<th>SKU</th><th>Produto</th><th>Categoria</th><th class="text-center">Estoque</th><th class="text-center">Vendidos</th><th class="text-right">Preço</th><th class="text-right">Faturamento</th>';
+        rows = items
+          .map(
+            (item) => `
           <tr>
-            <td>${item.sku || '-'}</td>
+            <td>${item.sku || "-"}</td>
             <td>${item.name}</td>
-            <td>${item.category?.name || '-'}</td>
+            <td>${item.category?.name || "-"}</td>
             <td class="text-center">${item.stock}</td>
             <td class="text-center">${item.soldQuantity || 0}</td>
             <td class="text-right">${formatCurrency(Number(item.salePrice))}</td>
             <td class="text-right">${formatCurrency(item.revenue || 0)}</td>
           </tr>
-        `).join('');
+        `,
+          )
+          .join("");
         break;
-      
-      case 'customers':
-        headers = '<th>Nome</th><th>Email</th><th>Telefone</th><th class="text-center">Pedidos</th><th class="text-right">Total Gasto</th><th>Última Compra</th>';
-        rows = items.map(item => `
+
+      case "customers":
+        headers =
+          '<th>Nome</th><th>Email</th><th>Telefone</th><th class="text-center">Pedidos</th><th class="text-right">Total Gasto</th><th>Última Compra</th>';
+        rows = items
+          .map(
+            (item) => `
           <tr>
             <td>${item.name}</td>
-            <td>${item.email || '-'}</td>
-            <td>${item.phone || '-'}</td>
+            <td>${item.email || "-"}</td>
+            <td>${item.phone || "-"}</td>
             <td class="text-center">${item.orderCount || 0}</td>
             <td class="text-right">${formatCurrency(item.totalSpent || 0)}</td>
-            <td>${item.lastOrderDate ? formatDate(item.lastOrderDate) : '-'}</td>
+            <td>${item.lastOrderDate ? formatDate(item.lastOrderDate) : "-"}</td>
           </tr>
-        `).join('');
+        `,
+          )
+          .join("");
         break;
-      
-      case 'financial':
-        headers = '<th>Data</th><th>Descrição</th><th>Categoria</th><th>Status</th><th class="text-right">Valor</th>';
-        rows = items.map(item => `
+
+      case "financial":
+        headers =
+          '<th>Data</th><th>Descrição</th><th>Categoria</th><th>Status</th><th class="text-right">Valor</th>';
+        rows = items
+          .map(
+            (item) => `
           <tr>
             <td>${formatDate(item.dueDate || item.createdAt)}</td>
             <td>${item.description}</td>
-            <td>${item.category || '-'}</td>
+            <td>${item.category || "-"}</td>
             <td>${item.status}</td>
-            <td class="text-right" style="color: ${item.type === 'INCOME' ? 'green' : 'red'}">
-              ${item.type === 'INCOME' ? '+' : '-'}${formatCurrency(Number(item.amount))}
+            <td class="text-right" style="color: ${item.type === "INCOME" ? "green" : "red"}">
+              ${item.type === "INCOME" ? "+" : "-"}${formatCurrency(Number(item.amount))}
             </td>
           </tr>
-        `).join('');
+        `,
+          )
+          .join("");
         break;
-      
-      case 'serviceOrders':
-        headers = '<th>Código</th><th>Cliente</th><th>Título</th><th>Status</th><th>Prioridade</th><th class="text-right">Total</th>';
-        rows = items.map(item => `
+
+      case "serviceOrders":
+        headers =
+          '<th>Código</th><th>Cliente</th><th>Título</th><th>Status</th><th>Prioridade</th><th class="text-right">Total</th>';
+        rows = items
+          .map(
+            (item) => `
           <tr>
             <td>#${item.code}</td>
-            <td>${item.customer?.name || '-'}</td>
+            <td>${item.customer?.name || "-"}</td>
             <td>${item.title}</td>
             <td>${item.status}</td>
             <td>${item.priority}</td>
             <td class="text-right">${formatCurrency(Number(item.total))}</td>
           </tr>
-        `).join('');
+        `,
+          )
+          .join("");
         break;
-      
-      case 'invoices':
-        headers = '<th>Número</th><th>Tipo</th><th>Cliente</th><th>Data</th><th>Status</th><th class="text-right">Valor</th>';
-        rows = items.map(item => `
+
+      case "invoices":
+        headers =
+          '<th>Número</th><th>Tipo</th><th>Cliente</th><th>Data</th><th>Status</th><th class="text-right">Valor</th>';
+        rows = items
+          .map(
+            (item) => `
           <tr>
             <td>${item.number}</td>
             <td>${item.type}</td>
-            <td>${item.customer?.name || item.recipientName || 'Consumidor Final'}</td>
+            <td>${item.customer?.name || item.recipientName || "Consumidor Final"}</td>
             <td>${formatDate(item.issueDate)}</td>
             <td>${item.status}</td>
             <td class="text-right">${formatCurrency(Number(item.total))}</td>
           </tr>
-        `).join('');
+        `,
+          )
+          .join("");
         break;
     }
 
@@ -906,22 +1013,28 @@ export class ReportsService {
   }
 
   // ========== GENERIC REPORT GENERATOR ==========
-  async generateReport(tenantId: string, reportType: string, filters: ReportFiltersDto) {
+  async generateReport(
+    tenantId: string,
+    reportType: string,
+    filters: ReportFiltersDto,
+  ) {
     switch (reportType) {
-      case 'sales':
+      case "sales":
         return this.generateSalesReport(tenantId, filters);
-      case 'products':
+      case "products":
         return this.generateProductsReport(tenantId, filters);
-      case 'customers':
+      case "customers":
         return this.generateCustomersReport(tenantId, filters);
-      case 'financial':
+      case "financial":
         return this.generateFinancialReport(tenantId, filters);
-      case 'serviceOrders':
+      case "serviceOrders":
         return this.generateServiceOrdersReport(tenantId, filters);
-      case 'invoices':
+      case "invoices":
         return this.generateInvoicesReport(tenantId, filters);
       default:
-        throw new BadRequestException(`Tipo de relatório não suportado: ${reportType}`);
+        throw new BadRequestException(
+          `Tipo de relatório não suportado: ${reportType}`,
+        );
     }
   }
 
@@ -931,13 +1044,18 @@ export class ReportsService {
     return [];
   }
 
-  async savePreset(tenantId: string, name: string, reportType: string, filters: Record<string, any>) {
+  async savePreset(
+    tenantId: string,
+    name: string,
+    reportType: string,
+    filters: Record<string, any>,
+  ) {
     // For now, just return success - implement preset storage if needed
     return { id: Date.now().toString(), name, reportType, filters };
   }
 
   async deletePreset(tenantId: string, id: string) {
     // For now, just return success - implement preset storage if needed
-    return { message: 'Preset excluído com sucesso' };
+    return { message: "Preset excluído com sucesso" };
   }
 }

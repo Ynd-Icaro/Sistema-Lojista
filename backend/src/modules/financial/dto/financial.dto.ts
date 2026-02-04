@@ -1,15 +1,24 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber, IsEnum, IsDateString, Min, IsBoolean } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsDateString,
+  Min,
+  IsBoolean,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
+import { Type, Transform } from "class-transformer";
 
 export class CreateTransactionDto {
-  @ApiProperty({ enum: ['INCOME', 'EXPENSE'] })
-  @IsEnum(['INCOME', 'EXPENSE'])
-  type: 'INCOME' | 'EXPENSE';
+  @ApiProperty({ enum: ["INCOME", "EXPENSE"] })
+  @IsEnum(["INCOME", "EXPENSE"])
+  type: "INCOME" | "EXPENSE";
 
-  @ApiProperty({ example: 'Pagamento fornecedor' })
+  @ApiProperty({ example: "Pagamento fornecedor" })
   @IsString()
-  @IsNotEmpty({ message: 'Descrição é obrigatória' })
+  @IsNotEmpty({ message: "Descrição é obrigatória" })
   description: string;
 
   @ApiProperty({ example: 1500 })
@@ -17,22 +26,31 @@ export class CreateTransactionDto {
   @Min(0)
   amount: number;
 
-  @ApiProperty({ example: '2026-01-20' })
+  @ApiProperty({ example: "2026-01-20" })
   @IsDateString()
-  @IsNotEmpty({ message: 'Data de vencimento é obrigatória' })
+  @IsNotEmpty({ message: "Data de vencimento é obrigatória" })
   dueDate: string;
 
-  @ApiPropertyOptional({ example: '2026-01-20' })
+  @ApiPropertyOptional({ example: "2026-01-20" })
   @IsDateString()
   @IsOptional()
   paidDate?: string;
 
-  @ApiPropertyOptional({ enum: ['PENDING', 'CONFIRMED', 'CANCELLED'] })
-  @IsEnum(['PENDING', 'CONFIRMED', 'CANCELLED'])
+  @ApiPropertyOptional({ enum: ["PENDING", "CONFIRMED", "CANCELLED"] })
+  @IsEnum(["PENDING", "CONFIRMED", "CANCELLED"])
   @IsOptional()
   status?: string;
 
-  @ApiPropertyOptional({ enum: ['CASH', 'CREDIT_CARD', 'DEBIT_CARD', 'PIX', 'BANK_TRANSFER', 'BOLETO'] })
+  @ApiPropertyOptional({
+    enum: [
+      "CASH",
+      "CREDIT_CARD",
+      "DEBIT_CARD",
+      "PIX",
+      "BANK_TRANSFER",
+      "BOLETO",
+    ],
+  })
   @IsString()
   @IsOptional()
   paymentMethod?: string;
@@ -42,7 +60,7 @@ export class CreateTransactionDto {
   @IsOptional()
   categoryId?: string;
 
-  @ApiPropertyOptional({ example: 'NF-12345' })
+  @ApiPropertyOptional({ example: "NF-12345" })
   @IsString()
   @IsOptional()
   reference?: string;
@@ -52,7 +70,9 @@ export class CreateTransactionDto {
   @IsOptional()
   notes?: string;
 
-  @ApiPropertyOptional({ enum: ['NONE', 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] })
+  @ApiPropertyOptional({
+    enum: ["NONE", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"],
+  })
   @IsString()
   @IsOptional()
   recurrence?: string;
@@ -61,33 +81,42 @@ export class CreateTransactionDto {
 export class UpdateTransactionDto extends PartialType(CreateTransactionDto) {}
 
 export class ConfirmTransactionDto {
-  @ApiPropertyOptional({ example: '2026-01-20' })
+  @ApiPropertyOptional({ example: "2026-01-20" })
   @IsDateString()
   @IsOptional()
   paidDate?: string;
 
-  @ApiPropertyOptional({ enum: ['CASH', 'CREDIT_CARD', 'DEBIT_CARD', 'PIX', 'BANK_TRANSFER', 'BOLETO'] })
+  @ApiPropertyOptional({
+    enum: [
+      "CASH",
+      "CREDIT_CARD",
+      "DEBIT_CARD",
+      "PIX",
+      "BANK_TRANSFER",
+      "BOLETO",
+    ],
+  })
   @IsString()
   @IsOptional()
   paymentMethod?: string;
 }
 
 export class CreateCategoryDto {
-  @ApiProperty({ example: 'Marketing' })
+  @ApiProperty({ example: "Marketing" })
   @IsString()
-  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  @IsNotEmpty({ message: "Nome é obrigatório" })
   name: string;
 
-  @ApiProperty({ enum: ['INCOME', 'EXPENSE'] })
-  @IsEnum(['INCOME', 'EXPENSE'])
-  type: 'INCOME' | 'EXPENSE';
+  @ApiProperty({ enum: ["INCOME", "EXPENSE"] })
+  @IsEnum(["INCOME", "EXPENSE"])
+  type: "INCOME" | "EXPENSE";
 
-  @ApiPropertyOptional({ example: '#6366f1' })
+  @ApiPropertyOptional({ example: "#6366f1" })
   @IsString()
   @IsOptional()
   color?: string;
 
-  @ApiPropertyOptional({ example: 'megaphone' })
+  @ApiPropertyOptional({ example: "megaphone" })
   @IsString()
   @IsOptional()
   icon?: string;
@@ -114,12 +143,12 @@ export class TransactionQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ enum: ['INCOME', 'EXPENSE'] })
+  @ApiPropertyOptional({ enum: ["INCOME", "EXPENSE"] })
   @IsOptional()
   @IsString()
   type?: string;
 
-  @ApiPropertyOptional({ enum: ['PENDING', 'CONFIRMED', 'CANCELLED'] })
+  @ApiPropertyOptional({ enum: ["PENDING", "CONFIRMED", "CANCELLED"] })
   @IsOptional()
   @IsString()
   status?: string;

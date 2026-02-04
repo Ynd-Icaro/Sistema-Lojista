@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
-import { MulterModule } from '@nestjs/platform-express';
-import { ProductsService } from './products.service';
-import { ProductsController } from './products.controller';
-import { ProductImportExportService } from './services/import-export.service';
+import { Module } from "@nestjs/common";
+import { MulterModule } from "@nestjs/platform-express";
+import { ProductsService } from "./products.service";
+import { ProductsController } from "./products.controller";
+import { ProductImportExportService } from "./services/import-export.service";
 
 @Module({
   imports: [

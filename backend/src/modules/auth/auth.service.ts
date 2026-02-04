@@ -1,10 +1,20 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../../prisma/prisma.service';
-import { LoginDto, RegisterDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
-import { UserRole, UserRoleType } from '../../types';
-import { EmailService } from '../notifications/services/email.service';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import * as bcrypt from "bcrypt";
+import { PrismaService } from "../../prisma/prisma.service";
+import {
+  LoginDto,
+  RegisterDto,
+  RefreshTokenDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from "./dto/auth.dto";
+import { UserRole, UserRoleType } from "../../types";
+import { EmailService } from "../notifications/services/email.service";
 
 @Injectable()
 export class AuthService {
@@ -17,16 +27,16 @@ export class AuthService {
   async validateUser(email: string, password: string, tenantId?: string) {
     // Validações básicas
     if (!email || !email.trim()) {
-      throw new BadRequestException('Email é obrigatório');
+      throw new BadRequestException("Email é obrigatório");
     }
 
     if (!password) {
-      throw new BadRequestException('Senha é obrigatória');
+      throw new BadRequestException("Senha é obrigatória");
     }
 
     const whereClause: any = {
       email: email.toLowerCase().trim(),
-      status: 'ACTIVE'
+      status: "ACTIVE",
     };
 
     if (tenantId) {
@@ -41,17 +51,17 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Email ou senha incorretos');
+      throw new UnauthorizedException("Email ou senha incorretos");
     }
 
     // Verificar se a senha foi fornecida
     if (!user.password) {
-      throw new UnauthorizedException('Conta não configurada corretamente');
+      throw new UnauthorizedException("Conta não configurada corretamente");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Email ou senha incorretos');
+      throw new UnauthorizedException("Email ou senha incorretos");
     }
 
     const { password: _, refreshToken: __, ...result } = user;
@@ -60,7 +70,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.validateUser(dto.email, dto.password, dto.tenantId);
-    
+
     const payload = {
       sub: user.id,
       email: user.email,
@@ -69,7 +79,7 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '30d' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: "30d" });
 
     // Update last login and refresh token
     await this.prisma.user.update({
@@ -90,40 +100,42 @@ export class AuthService {
   async register(dto: RegisterDto) {
     // Validações básicas dos campos obrigatórios
     if (!dto.email || !dto.email.trim()) {
-      throw new BadRequestException('O campo email é obrigatório');
+      throw new BadRequestException("O campo email é obrigatório");
     }
 
     if (!dto.password || dto.password.length < 6) {
-      throw new BadRequestException('A senha deve ter no mínimo 6 caracteres');
+      throw new BadRequestException("A senha deve ter no mínimo 6 caracteres");
     }
 
     if (!dto.name || !dto.name.trim()) {
-      throw new BadRequestException('O campo nome é obrigatório');
+      throw new BadRequestException("O campo nome é obrigatório");
     }
 
     // Validar formato do email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(dto.email)) {
-      throw new BadRequestException('Formato de email inválido');
+      throw new BadRequestException("Formato de email inválido");
     }
 
     // Validar força da senha
     if (dto.password.length < 8) {
-      throw new BadRequestException('A senha deve ter no mínimo 8 caracteres');
+      throw new BadRequestException("A senha deve ter no mínimo 8 caracteres");
     }
 
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
     if (!passwordRegex.test(dto.password)) {
-      throw new BadRequestException('A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número');
+      throw new BadRequestException(
+        "A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número",
+      );
     }
 
-    // Verificar se email já existe
-    const existingUser = await this.prisma.user.findUnique({
+    // Verificar se email já existe (não podemos usar findUnique pois email não é único globalmente)
+    const existingUserCheck = await this.prisma.user.findFirst({
       where: { email: dto.email.toLowerCase().trim() },
     });
 
-    if (existingUser) {
-      throw new BadRequestException('Este email já está cadastrado');
+    if (existingUserCheck) {
+      throw new BadRequestException("Este email já está cadastrado");
     }
 
     let tenantId = dto.tenantId;
@@ -131,20 +143,24 @@ export class AuthService {
     // Se tenantName for fornecido, criar novo tenant
     if (dto.tenantName) {
       if (dto.tenantName.trim().length < 3) {
-        throw new BadRequestException('O nome da empresa deve ter no mínimo 3 caracteres');
+        throw new BadRequestException(
+          "O nome da empresa deve ter no mínimo 3 caracteres",
+        );
       }
 
       if (dto.tenantName.trim().length > 100) {
-        throw new BadRequestException('O nome da empresa deve ter no máximo 100 caracteres');
+        throw new BadRequestException(
+          "O nome da empresa deve ter no máximo 100 caracteres",
+        );
       }
 
       // Criar slug único para o tenant
       const baseSlug = dto.tenantName
         .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
 
       let slug = baseSlug;
       let counter = 1;
@@ -162,10 +178,10 @@ export class AuthService {
           slug,
           isActive: true,
           settings: {
-            primaryColor: '#3B82F6',
-            secondaryColor: '#1E40AF',
-            plan: 'FREE',
-            invoicePrefix: 'NF',
+            primaryColor: "#3B82F6",
+            secondaryColor: "#1E40AF",
+            plan: "FREE",
+            invoicePrefix: "NF",
             invoiceNextNumber: 1,
             warrantyDays: 90,
             loyaltyPointsValue: 0.1,
@@ -181,7 +197,9 @@ export class AuthService {
     }
 
     if (!tenantId) {
-      throw new BadRequestException('É necessário informar o ID da empresa ou nome para criar uma nova empresa');
+      throw new BadRequestException(
+        "É necessário informar o ID da empresa ou nome para criar uma nova empresa",
+      );
     }
 
     // Verificar se tenant existe
@@ -190,11 +208,11 @@ export class AuthService {
     });
 
     if (!tenant) {
-      throw new BadRequestException('Empresa não encontrada');
+      throw new BadRequestException("Empresa não encontrada");
     }
 
     if (!tenant.isActive) {
-      throw new BadRequestException('Esta empresa está inativa');
+      throw new BadRequestException("Esta empresa está inativa");
     }
 
     // Check if tenant exists (para caso tenantId seja fornecido diretamente)
@@ -204,18 +222,21 @@ export class AuthService {
       });
 
       if (!tenant) {
-        throw new BadRequestException('Empresa não encontrada. Verifique o ID da empresa.');
+        throw new BadRequestException(
+          "Empresa não encontrada. Verifique o ID da empresa.",
+        );
       }
 
       if (!tenant.isActive) {
-        throw new BadRequestException('Esta empresa está inativa. Entre em contato com o administrador.');
+        throw new BadRequestException(
+          "Esta empresa está inativa. Entre em contato com o administrador.",
+        );
       }
     }
 
-    // Validar formato do email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Validar formato do email (já validado acima)
     if (!emailRegex.test(dto.email)) {
-      throw new BadRequestException('O formato do email é inválido');
+      throw new BadRequestException("O formato do email é inválido");
     }
 
     // Check if email already exists in tenant
@@ -227,7 +248,9 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new BadRequestException('Este email já está cadastrado nesta empresa. Use outro email ou faça login.');
+      throw new BadRequestException(
+        "Este email já está cadastrado nesta empresa. Use outro email ou faça login.",
+      );
     }
 
     // Hash password
@@ -257,7 +280,7 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '30d' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: "30d" });
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -275,14 +298,14 @@ export class AuthService {
   async refreshToken(dto: RefreshTokenDto) {
     try {
       const decoded = this.jwtService.verify(dto.refreshToken);
-      
+
       const user = await this.prisma.user.findUnique({
         where: { id: decoded.sub },
         include: { tenant: true },
       });
 
       if (!user || user.refreshToken !== dto.refreshToken) {
-        throw new UnauthorizedException('Token inválido');
+        throw new UnauthorizedException("Token inválido");
       }
 
       const payload = {
@@ -293,7 +316,9 @@ export class AuthService {
       };
 
       const accessToken = this.jwtService.sign(payload);
-      const newRefreshToken = this.jwtService.sign(payload, { expiresIn: '30d' });
+      const newRefreshToken = this.jwtService.sign(payload, {
+        expiresIn: "30d",
+      });
 
       await this.prisma.user.update({
         where: { id: user.id },
@@ -308,7 +333,7 @@ export class AuthService {
         refreshToken: newRefreshToken,
       };
     } catch (error) {
-      throw new UnauthorizedException('Token inválido ou expirado');
+      throw new UnauthorizedException("Token inválido ou expirado");
     }
   }
 
@@ -317,7 +342,7 @@ export class AuthService {
       where: { id: userId },
       data: { refreshToken: null },
     });
-    return { message: 'Logout realizado com sucesso' };
+    return { message: "Logout realizado com sucesso" };
   }
 
   async getProfile(userId: string) {
@@ -327,25 +352,32 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Usuário não encontrado');
+      throw new UnauthorizedException("Usuário não encontrado");
     }
 
     const { password, refreshToken, ...result } = user;
     return result;
   }
 
-  async updatePassword(userId: string, currentPassword: string, newPassword: string) {
+  async updatePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
 
     if (!user) {
-      throw new UnauthorizedException('Usuário não encontrado');
+      throw new UnauthorizedException("Usuário não encontrado");
     }
 
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    );
     if (!isPasswordValid) {
-      throw new BadRequestException('Senha atual incorreta');
+      throw new BadRequestException("Senha atual incorreta");
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -355,16 +387,24 @@ export class AuthService {
       data: { password: hashedPassword },
     });
 
-    return { message: 'Senha alterada com sucesso' };
+    return { message: "Senha alterada com sucesso" };
   }
 
-  async updateProfile(userId: string, data: { name?: string; email?: string; currentPassword?: string; newPassword?: string }) {
+  async updateProfile(
+    userId: string,
+    data: {
+      name?: string;
+      email?: string;
+      currentPassword?: string;
+      newPassword?: string;
+    },
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
 
     if (!user) {
-      throw new UnauthorizedException('Usuário não encontrado');
+      throw new UnauthorizedException("Usuário não encontrado");
     }
 
     const updateData: any = {};
@@ -384,7 +424,7 @@ export class AuthService {
       });
 
       if (existingUser) {
-        throw new BadRequestException('Email já está em uso');
+        throw new BadRequestException("Email já está em uso");
       }
 
       updateData.email = data.email;
@@ -392,9 +432,12 @@ export class AuthService {
 
     // Update password if provided
     if (data.newPassword && data.currentPassword) {
-      const isPasswordValid = await bcrypt.compare(data.currentPassword, user.password);
+      const isPasswordValid = await bcrypt.compare(
+        data.currentPassword,
+        user.password,
+      );
       if (!isPasswordValid) {
-        throw new BadRequestException('Senha atual incorreta');
+        throw new BadRequestException("Senha atual incorreta");
       }
       updateData.password = await bcrypt.hash(data.newPassword, 10);
     }
@@ -415,7 +458,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new BadRequestException('Email não encontrado');
+      throw new BadRequestException("Email não encontrado");
     }
 
     // Generate a 6-digit code
@@ -432,7 +475,7 @@ export class AuthService {
     });
 
     // Send email
-    const subject = 'Código de Verificação - SmartFlux ERP';
+    const subject = "Código de Verificação - SmartFlux ERP";
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Redefinição de Senha</h2>
@@ -456,59 +499,69 @@ export class AuthService {
         html,
       });
     } catch (error) {
-      console.error('Erro ao enviar email de redefinição:', error);
-      throw new BadRequestException('Erro ao enviar email. Tente novamente.');
+      console.error("Erro ao enviar email de redefinição:", error);
+      throw new BadRequestException("Erro ao enviar email. Tente novamente.");
     }
 
-    return { message: 'Código de verificação enviado para seu email' };
+    return { message: "Código de verificação enviado para seu email" };
   }
 
   async resetPassword(dto: ResetPasswordDto) {
     // Validações básicas
     if (!dto.email || !dto.email.trim()) {
-      throw new BadRequestException('Email é obrigatório');
+      throw new BadRequestException("Email é obrigatório");
     }
 
     if (!dto.code || !dto.code.trim()) {
-      throw new BadRequestException('Código de verificação é obrigatório');
+      throw new BadRequestException("Código de verificação é obrigatório");
     }
 
     if (!dto.newPassword || dto.newPassword.length < 8) {
-      throw new BadRequestException('A nova senha deve ter no mínimo 8 caracteres');
+      throw new BadRequestException(
+        "A nova senha deve ter no mínimo 8 caracteres",
+      );
     }
 
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
     if (!passwordRegex.test(dto.newPassword)) {
-      throw new BadRequestException('A nova senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número');
+      throw new BadRequestException(
+        "A nova senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número",
+      );
     }
 
     const user = await this.prisma.user.findFirst({
       where: {
         email: dto.email.toLowerCase().trim(),
-        status: 'ACTIVE'
+        status: "ACTIVE",
       },
     });
 
     if (!user) {
-      throw new BadRequestException('Usuário não encontrado');
+      throw new BadRequestException("Usuário não encontrado");
     }
 
     if (!user.resetCode || !user.resetCodeExpiresAt) {
-      throw new BadRequestException('Código de verificação não encontrado. Solicite um novo código.');
+      throw new BadRequestException(
+        "Código de verificação não encontrado. Solicite um novo código.",
+      );
     }
 
     if (user.resetCode !== dto.code.trim()) {
-      throw new BadRequestException('Código de verificação inválido');
+      throw new BadRequestException("Código de verificação inválido");
     }
 
     if (new Date() > user.resetCodeExpiresAt) {
-      throw new BadRequestException('Código de verificação expirado. Solicite um novo código.');
+      throw new BadRequestException(
+        "Código de verificação expirado. Solicite um novo código.",
+      );
     }
 
     // Verificar se a nova senha é diferente da atual
     const isSamePassword = await bcrypt.compare(dto.newPassword, user.password);
     if (isSamePassword) {
-      throw new BadRequestException('A nova senha deve ser diferente da senha atual');
+      throw new BadRequestException(
+        "A nova senha deve ser diferente da senha atual",
+      );
     }
 
     // Hash new password
@@ -524,6 +577,6 @@ export class AuthService {
       },
     });
 
-    return { message: 'Senha redefinida com sucesso' };
+    return { message: "Senha redefinida com sucesso" };
   }
 }

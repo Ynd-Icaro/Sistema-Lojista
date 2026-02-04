@@ -1,6 +1,15 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber, IsEnum, IsArray, ValidateNested, Min } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsArray,
+  ValidateNested,
+  Min,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Type, Transform } from "class-transformer";
 
 export class SaleItemDto {
   @ApiProperty()
@@ -13,7 +22,7 @@ export class SaleItemDto {
   @Min(1)
   quantity: number;
 
-  @ApiProperty({ example: 99.90 })
+  @ApiProperty({ example: 99.9 })
   @IsNumber()
   @Min(0)
   unitPrice: number;
@@ -31,8 +40,26 @@ export class SaleItemDto {
 }
 
 export class SalePaymentDto {
-  @ApiProperty({ enum: ['CASH', 'CREDIT_CARD', 'DEBIT_CARD', 'PIX', 'BANK_TRANSFER', 'BOLETO', 'INSTALLMENT'] })
-  @IsEnum(['CASH', 'CREDIT_CARD', 'DEBIT_CARD', 'PIX', 'BANK_TRANSFER', 'BOLETO', 'INSTALLMENT'])
+  @ApiProperty({
+    enum: [
+      "CASH",
+      "CREDIT_CARD",
+      "DEBIT_CARD",
+      "PIX",
+      "BANK_TRANSFER",
+      "BOLETO",
+      "INSTALLMENT",
+    ],
+  })
+  @IsEnum([
+    "CASH",
+    "CREDIT_CARD",
+    "DEBIT_CARD",
+    "PIX",
+    "BANK_TRANSFER",
+    "BOLETO",
+    "INSTALLMENT",
+  ])
   method: string;
 
   @ApiProperty({ example: 100 })
@@ -75,7 +102,7 @@ export class CreateSaleDto {
   @IsOptional()
   discount?: number;
 
-  @ApiPropertyOptional({ enum: ['FIXED', 'PERCENT'] })
+  @ApiPropertyOptional({ enum: ["FIXED", "PERCENT"] })
   @IsString()
   @IsOptional()
   discountType?: string;
@@ -92,8 +119,26 @@ export class CreateSaleDto {
   @IsOptional()
   paidAmount?: number;
 
-  @ApiPropertyOptional({ enum: ['CASH', 'CREDIT_CARD', 'DEBIT_CARD', 'PIX', 'BANK_TRANSFER', 'BOLETO', 'INSTALLMENT'] })
-  @IsEnum(['CASH', 'CREDIT_CARD', 'DEBIT_CARD', 'PIX', 'BANK_TRANSFER', 'BOLETO', 'INSTALLMENT'])
+  @ApiPropertyOptional({
+    enum: [
+      "CASH",
+      "CREDIT_CARD",
+      "DEBIT_CARD",
+      "PIX",
+      "BANK_TRANSFER",
+      "BOLETO",
+      "INSTALLMENT",
+    ],
+  })
+  @IsEnum([
+    "CASH",
+    "CREDIT_CARD",
+    "DEBIT_CARD",
+    "PIX",
+    "BANK_TRANSFER",
+    "BOLETO",
+    "INSTALLMENT",
+  ])
   @IsOptional()
   paymentMethod?: string;
 
@@ -126,7 +171,9 @@ export class SaleQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ enum: ['DRAFT', 'COMPLETED', 'CANCELLED', 'REFUNDED'] })
+  @ApiPropertyOptional({
+    enum: ["DRAFT", "COMPLETED", "CANCELLED", "REFUNDED"],
+  })
   @IsOptional()
   @IsString()
   status?: string;

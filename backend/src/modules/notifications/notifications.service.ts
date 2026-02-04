@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { EmailService } from './services/email.service';
-import { WhatsAppService } from './services/whatsapp.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { EmailService } from "./services/email.service";
+import { WhatsAppService } from "./services/whatsapp.service";
 
 @Injectable()
 export class NotificationsService {
@@ -18,8 +18,8 @@ export class NotificationsService {
     invoice: any,
     isCopy = false,
   ) {
-    const subject = isCopy 
-      ? `[Cópia] Nota Fiscal ${invoice.number} - ${invoice.recipientName || 'Cliente'}`
+    const subject = isCopy
+      ? `[Cópia] Nota Fiscal ${invoice.number} - ${invoice.recipientName || "Cliente"}`
       : `Nota Fiscal ${invoice.number} - SmartFlux`;
 
     const html = this.generateInvoiceEmailHtml(invoice, isCopy);
@@ -36,8 +36,8 @@ export class NotificationsService {
         data: {
           tenantId,
           customerId,
-          type: 'EMAIL',
-          status: 'SENT',
+          type: "EMAIL",
+          status: "SENT",
           recipient: email,
           subject,
           content: `Nota Fiscal ${invoice.number}`,
@@ -46,14 +46,14 @@ export class NotificationsService {
         },
       });
 
-      return { success: true, message: 'Email enviado com sucesso' };
+      return { success: true, message: "Email enviado com sucesso" };
     } catch (error) {
       await this.prisma.notificationLog.create({
         data: {
           tenantId,
           customerId,
-          type: 'EMAIL',
-          status: 'FAILED',
+          type: "EMAIL",
+          status: "FAILED",
           recipient: email,
           subject,
           content: `Nota Fiscal ${invoice.number}`,
@@ -84,8 +84,8 @@ export class NotificationsService {
         data: {
           tenantId,
           customerId,
-          type: 'WHATSAPP',
-          status: 'SENT',
+          type: "WHATSAPP",
+          status: "SENT",
           recipient: phone,
           content: message,
           sentAt: new Date(),
@@ -93,14 +93,14 @@ export class NotificationsService {
         },
       });
 
-      return { success: true, message: 'WhatsApp enviado com sucesso' };
+      return { success: true, message: "WhatsApp enviado com sucesso" };
     } catch (error) {
       await this.prisma.notificationLog.create({
         data: {
           tenantId,
           customerId,
-          type: 'WHATSAPP',
-          status: 'FAILED',
+          type: "WHATSAPP",
+          status: "FAILED",
           recipient: phone,
           content: message,
           errorMsg: error.message,
@@ -189,8 +189,8 @@ export class NotificationsService {
           data: {
             tenantId,
             customerId: customer.id,
-            type: 'EMAIL',
-            status: 'SENT',
+            type: "EMAIL",
+            status: "SENT",
             recipient: customer.email,
             subject: `OS ${order.code} - ${this.getStatusLabel(status)}`,
             content: `Atualização de status para ${this.getStatusLabel(status)}`,
@@ -203,8 +203,8 @@ export class NotificationsService {
           data: {
             tenantId,
             customerId: customer.id,
-            type: 'EMAIL',
-            status: 'FAILED',
+            type: "EMAIL",
+            status: "FAILED",
             recipient: customer.email,
             subject: `OS ${order.code} - ${this.getStatusLabel(status)}`,
             content: `Atualização de status para ${this.getStatusLabel(status)}`,
@@ -228,7 +228,7 @@ export class NotificationsService {
             select: { id: true, name: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.notificationLog.count({ where: { tenantId } }),
     ]);
@@ -246,7 +246,10 @@ export class NotificationsService {
 
   private generateInvoiceEmailHtml(invoice: any, isCopy: boolean): string {
     const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(value);
     };
 
     return `
@@ -268,12 +271,12 @@ export class NotificationsService {
     .total { font-size: 24px; color: #6366f1; text-align: center; padding: 20px; }
     .btn { display: inline-block; background: #6366f1; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; margin-top: 20px; }
     .footer { background: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
-    ${isCopy ? '.copy-banner { background: #fef3c7; color: #92400e; padding: 10px; text-align: center; font-weight: 600; }' : ''}
+    ${isCopy ? ".copy-banner { background: #fef3c7; color: #92400e; padding: 10px; text-align: center; font-weight: 600; }" : ""}
   </style>
 </head>
 <body>
   <div class="container">
-    ${isCopy ? '<div class="copy-banner">📋 CÓPIA - Esta é uma cópia da nota fiscal enviada ao cliente</div>' : ''}
+    ${isCopy ? '<div class="copy-banner">📋 CÓPIA - Esta é uma cópia da nota fiscal enviada ao cliente</div>' : ""}
     <div class="header">
       <h1>📄 Nota Fiscal</h1>
       <p>Nº ${invoice.number}</p>
@@ -282,18 +285,22 @@ export class NotificationsService {
       <div class="info-box">
         <div class="info-row">
           <span class="label">Cliente</span>
-          <span class="value">${invoice.recipientName || 'Consumidor Final'}</span>
+          <span class="value">${invoice.recipientName || "Consumidor Final"}</span>
         </div>
         <div class="info-row">
           <span class="label">Data</span>
-          <span class="value">${new Date(invoice.issueDate).toLocaleDateString('pt-BR')}</span>
+          <span class="value">${new Date(invoice.issueDate).toLocaleDateString("pt-BR")}</span>
         </div>
-        ${invoice.warrantyDays ? `
+        ${
+          invoice.warrantyDays
+            ? `
         <div class="info-row">
           <span class="label">Garantia</span>
-          <span class="value">${invoice.warrantyDays} dias (até ${new Date(invoice.warrantyExpires).toLocaleDateString('pt-BR')})</span>
+          <span class="value">${invoice.warrantyDays} dias (até ${new Date(invoice.warrantyExpires).toLocaleDateString("pt-BR")})</span>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
       </div>
       
       <div class="total">
@@ -320,18 +327,21 @@ export class NotificationsService {
 
   private generateInvoiceWhatsAppMessage(invoice: any): string {
     const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(value);
     };
 
     let message = `📄 *NOTA FISCAL ${invoice.number}*\n\n`;
-    message += `👤 Cliente: ${invoice.recipientName || 'Consumidor Final'}\n`;
-    message += `📅 Data: ${new Date(invoice.issueDate).toLocaleDateString('pt-BR')}\n`;
+    message += `👤 Cliente: ${invoice.recipientName || "Consumidor Final"}\n`;
+    message += `📅 Data: ${new Date(invoice.issueDate).toLocaleDateString("pt-BR")}\n`;
     message += `💰 Valor: *${formatCurrency(Number(invoice.total))}*\n`;
-    
+
     if (invoice.warrantyDays) {
       message += `\n🛡️ *GARANTIA*\n`;
       message += `Prazo: ${invoice.warrantyDays} dias\n`;
-      message += `Válida até: ${new Date(invoice.warrantyExpires).toLocaleDateString('pt-BR')}\n`;
+      message += `Válida até: ${new Date(invoice.warrantyExpires).toLocaleDateString("pt-BR")}\n`;
     }
 
     message += `\n🔑 Chave de Acesso:\n\`${invoice.accessKey}\`\n`;
@@ -342,7 +352,10 @@ export class NotificationsService {
 
   private generateSaleConfirmationMessage(sale: any): string {
     const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(value);
     };
 
     let message = `✅ *COMPRA CONFIRMADA*\n\n`;
@@ -360,16 +373,19 @@ export class NotificationsService {
 
   private generateServiceOrderMessage(order: any, status: string): string {
     const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(value);
     };
 
-    const customerName = order.customer?.name || 'Cliente';
-    const isDelivery = order.notes?.toLowerCase().includes('entrega') || false;
+    const customerName = order.customer?.name || "Cliente";
+    const isDelivery = order.notes?.toLowerCase().includes("entrega") || false;
 
-    let message = '';
+    let message = "";
 
     switch (status) {
-      case 'CREATED':
+      case "CREATED":
         message = `🔧 *ORDEM DE SERVIÇO CRIADA*\n\n`;
         message += `Olá *${customerName}*!\n\n`;
         message += `Sua ordem de serviço foi registrada com sucesso.\n\n`;
@@ -381,45 +397,49 @@ export class NotificationsService {
           if (order.deviceModel) message += ` (${order.deviceModel})`;
           message += `\n`;
         }
-        if (order.reportedIssue) message += `• Problema: ${order.reportedIssue}\n`;
+        if (order.reportedIssue)
+          message += `• Problema: ${order.reportedIssue}\n`;
         message += `• Status: 🟡 Pendente\n\n`;
         message += `Você receberá atualizações sobre o andamento.\n\n`;
         message += `_SmartFlux ERP_`;
         break;
 
-      case 'IN_PROGRESS':
+      case "IN_PROGRESS":
         message = `🔧 *SERVIÇO EM ANDAMENTO*\n\n`;
         message += `Olá *${customerName}*!\n\n`;
         message += `Sua OS *#${order.code}* está agora em andamento! 🔵\n\n`;
-        if (order.deviceType) message += `📱 Dispositivo: ${order.deviceType}\n\n`;
+        if (order.deviceType)
+          message += `📱 Dispositivo: ${order.deviceType}\n\n`;
         message += `Nossos técnicos estão trabalhando no seu equipamento.\n`;
         message += `Você será notificado quando o serviço for concluído.\n\n`;
         message += `_SmartFlux ERP_`;
         break;
 
-      case 'WAITING_PARTS':
+      case "WAITING_PARTS":
         message = `📦 *AGUARDANDO PEÇAS*\n\n`;
         message += `Olá *${customerName}*!\n\n`;
         message += `Sua OS *#${order.code}* está aguardando peças para continuidade do serviço.\n\n`;
-        if (order.deviceType) message += `📱 Dispositivo: ${order.deviceType}\n\n`;
+        if (order.deviceType)
+          message += `📱 Dispositivo: ${order.deviceType}\n\n`;
         message += `Assim que as peças chegarem, daremos continuidade ao serviço.\n`;
         message += `Você será notificado sobre qualquer atualização.\n\n`;
         message += `_SmartFlux ERP_`;
         break;
 
-      case 'CANCELLED':
+      case "CANCELLED":
         message = `❌ *ORDEM DE SERVIÇO CANCELADA*\n\n`;
         message += `Olá *${customerName}*!\n\n`;
         message += `A OS *#${order.code}* foi cancelada.\n\n`;
-        if (order.deviceType) message += `📱 Dispositivo: ${order.deviceType}\n\n`;
+        if (order.deviceType)
+          message += `📱 Dispositivo: ${order.deviceType}\n\n`;
         message += `Em caso de dúvidas, entre em contato conosco.\n\n`;
         message += `_SmartFlux ERP_`;
         break;
 
-      case 'COMPLETED':
-        const actionMsg = isDelivery 
-          ? '🚚 *Seu pedido será entregue em breve!*'
-          : '📍 *Seu dispositivo está pronto para retirada!*';
+      case "COMPLETED":
+        const actionMsg = isDelivery
+          ? "🚚 *Seu pedido será entregue em breve!*"
+          : "📍 *Seu dispositivo está pronto para retirada!*";
 
         message = `✅ *SERVIÇO CONCLUÍDO!*\n\n`;
         message += `Olá *${customerName}*!\n\n`;
@@ -431,24 +451,27 @@ export class NotificationsService {
         message += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
         message += `👤 *Cliente:* ${customerName}\n`;
         message += `🔢 *Nº da OS:* #${order.code}\n`;
-        
+
         if (order.deviceType) {
           message += `📱 *Dispositivo:* ${order.deviceType}`;
           if (order.deviceBrand) message += ` - ${order.deviceBrand}`;
           if (order.deviceModel) message += ` (${order.deviceModel})`;
           message += `\n`;
         }
-        
-        if (order.reportedIssue) message += `⚠️ *Problema Relatado:* ${order.reportedIssue}\n`;
-        if (order.diagnosis) message += `🔍 *Diagnóstico:* ${order.diagnosis}\n`;
-        if (order.total) message += `\n💰 *Valor Total:* ${formatCurrency(Number(order.total))}\n`;
-        
+
+        if (order.reportedIssue)
+          message += `⚠️ *Problema Relatado:* ${order.reportedIssue}\n`;
+        if (order.diagnosis)
+          message += `🔍 *Diagnóstico:* ${order.diagnosis}\n`;
+        if (order.total)
+          message += `\n💰 *Valor Total:* ${formatCurrency(Number(order.total))}\n`;
+
         message += `\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
         message += `Obrigado pela confiança! 💙\n\n`;
         message += `_SmartFlux ERP_`;
         break;
 
-      case 'DELIVERED':
+      case "DELIVERED":
         message = `🎉 *ENTREGA REALIZADA*\n\n`;
         message += `Olá *${customerName}*!\n\n`;
         message += `Sua OS *#${order.code}* foi entregue com sucesso!\n\n`;
@@ -469,69 +492,76 @@ export class NotificationsService {
 
   private generateServiceOrderEmailHtml(order: any, status: string): string {
     const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(value);
     };
 
-    const customerName = order.customer?.name || 'Cliente';
-    const isDelivery = order.notes?.toLowerCase().includes('entrega') || false;
-    
-    let statusColor = '#6366f1';
-    let statusBg = 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
-    let statusIcon = '📋';
-    let statusTitle = 'Ordem de Serviço';
-    let actionMessage = '';
+    const customerName = order.customer?.name || "Cliente";
+    const isDelivery = order.notes?.toLowerCase().includes("entrega") || false;
+
+    let statusColor = "#6366f1";
+    let statusBg = "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)";
+    let statusIcon = "📋";
+    let statusTitle = "Ordem de Serviço";
+    let actionMessage = "";
 
     switch (status) {
-      case 'CREATED':
-        statusColor = '#f59e0b';
-        statusBg = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
-        statusIcon = '🔧';
-        statusTitle = 'Ordem de Serviço Criada';
-        actionMessage = 'Sua ordem de serviço foi registrada e em breve será atendida.';
+      case "CREATED":
+        statusColor = "#f59e0b";
+        statusBg = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)";
+        statusIcon = "🔧";
+        statusTitle = "Ordem de Serviço Criada";
+        actionMessage =
+          "Sua ordem de serviço foi registrada e em breve será atendida.";
         break;
-      case 'PENDING':
-        statusColor = '#eab308';
-        statusBg = 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)';
-        statusIcon = '🟡';
-        statusTitle = 'Ordem de Serviço Pendente';
-        actionMessage = 'Sua ordem de serviço está na fila e será atendida em breve.';
+      case "PENDING":
+        statusColor = "#eab308";
+        statusBg = "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)";
+        statusIcon = "🟡";
+        statusTitle = "Ordem de Serviço Pendente";
+        actionMessage =
+          "Sua ordem de serviço está na fila e será atendida em breve.";
         break;
-      case 'IN_PROGRESS':
-        statusColor = '#3b82f6';
-        statusBg = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
-        statusIcon = '🔧';
-        statusTitle = 'Serviço em Andamento';
-        actionMessage = 'Nossos técnicos estão trabalhando no seu equipamento.';
+      case "IN_PROGRESS":
+        statusColor = "#3b82f6";
+        statusBg = "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)";
+        statusIcon = "🔧";
+        statusTitle = "Serviço em Andamento";
+        actionMessage = "Nossos técnicos estão trabalhando no seu equipamento.";
         break;
-      case 'WAITING_PARTS':
-        statusColor = '#f97316';
-        statusBg = 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)';
-        statusIcon = '📦';
-        statusTitle = 'Aguardando Peças';
-        actionMessage = 'Estamos aguardando peças para dar continuidade ao seu serviço.';
+      case "WAITING_PARTS":
+        statusColor = "#f97316";
+        statusBg = "linear-gradient(135deg, #f97316 0%, #ea580c 100%)";
+        statusIcon = "📦";
+        statusTitle = "Aguardando Peças";
+        actionMessage =
+          "Estamos aguardando peças para dar continuidade ao seu serviço.";
         break;
-      case 'COMPLETED':
-        statusColor = '#10b981';
-        statusBg = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-        statusIcon = '✅';
-        statusTitle = 'Serviço Concluído!';
-        actionMessage = isDelivery 
-          ? '🚚 Seu pedido será entregue em breve!'
-          : '📍 Seu dispositivo está pronto para retirada!';
+      case "COMPLETED":
+        statusColor = "#10b981";
+        statusBg = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
+        statusIcon = "✅";
+        statusTitle = "Serviço Concluído!";
+        actionMessage = isDelivery
+          ? "🚚 Seu pedido será entregue em breve!"
+          : "📍 Seu dispositivo está pronto para retirada!";
         break;
-      case 'DELIVERED':
-        statusColor = '#8b5cf6';
-        statusBg = 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
-        statusIcon = '🎉';
-        statusTitle = 'Entrega Realizada';
-        actionMessage = 'Obrigado por escolher nossos serviços!';
+      case "DELIVERED":
+        statusColor = "#8b5cf6";
+        statusBg = "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)";
+        statusIcon = "🎉";
+        statusTitle = "Entrega Realizada";
+        actionMessage = "Obrigado por escolher nossos serviços!";
         break;
-      case 'CANCELLED':
-        statusColor = '#ef4444';
-        statusBg = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
-        statusIcon = '❌';
-        statusTitle = 'Ordem de Serviço Cancelada';
-        actionMessage = 'Esta ordem de serviço foi cancelada. Em caso de dúvidas, entre em contato.';
+      case "CANCELLED":
+        statusColor = "#ef4444";
+        statusBg = "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)";
+        statusIcon = "❌";
+        statusTitle = "Ordem de Serviço Cancelada";
+        actionMessage =
+          "Esta ordem de serviço foi cancelada. Em caso de dúvidas, entre em contato.";
         break;
     }
 
@@ -585,36 +615,57 @@ export class NotificationsService {
           <span class="label">Status</span>
           <span class="value" style="color: ${statusColor};">${this.getStatusLabel(status)}</span>
         </div>
-        ${order.deviceType ? `
+        ${
+          order.deviceType
+            ? `
         <div class="info-row">
           <span class="label">Dispositivo</span>
-          <span class="value">${order.deviceType}${order.deviceBrand ? ` - ${order.deviceBrand}` : ''}${order.deviceModel ? ` (${order.deviceModel})` : ''}</span>
+          <span class="value">${order.deviceType}${order.deviceBrand ? ` - ${order.deviceBrand}` : ""}${order.deviceModel ? ` (${order.deviceModel})` : ""}</span>
         </div>
-        ` : ''}
-        ${order.reportedIssue ? `
+        `
+            : ""
+        }
+        ${
+          order.reportedIssue
+            ? `
         <div class="info-row">
           <span class="label">Problema Relatado</span>
           <span class="value">${order.reportedIssue}</span>
         </div>
-        ` : ''}
-        ${order.diagnosis && status === 'COMPLETED' ? `
+        `
+            : ""
+        }
+        ${
+          order.diagnosis && status === "COMPLETED"
+            ? `
         <div class="info-row">
           <span class="label">Diagnóstico</span>
           <span class="value">${order.diagnosis}</span>
         </div>
-        ` : ''}
-        ${order.warrantyDays && (status === 'COMPLETED' || status === 'DELIVERED') ? `
+        `
+            : ""
+        }
+        ${
+          order.warrantyDays &&
+          (status === "COMPLETED" || status === "DELIVERED")
+            ? `
         <div class="info-row">
           <span class="label">Garantia</span>
           <span class="value">${order.warrantyDays} dias</span>
         </div>
-        ` : ''}
-        ${order.total && (status === 'COMPLETED' || status === 'DELIVERED') ? `
+        `
+            : ""
+        }
+        ${
+          order.total && (status === "COMPLETED" || status === "DELIVERED")
+            ? `
         <div class="info-row total-row">
           <span class="label" style="font-weight: 600;">Valor Total</span>
           <span class="value">${formatCurrency(Number(order.total))}</span>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
       </div>
       
       <p style="color: #64748b; text-align: center; margin-top: 30px;">
@@ -659,34 +710,46 @@ export class NotificationsService {
       await this.prisma.notificationLog.create({
         data: {
           tenantId,
-          type: 'EMAIL',
-          status: 'SENT',
+          type: "EMAIL",
+          status: "SENT",
           recipient: emailForNotifications,
           subject,
           content: `Alerta de estoque baixo para ${lowStockProducts.length} produtos`,
           sentAt: new Date(),
-          metadata: { 
-            lowStockProducts: lowStockProducts.map(p => ({ id: p.id, name: p.name, stock: p.stock, minStock: p.minStock })) 
+          metadata: {
+            lowStockProducts: lowStockProducts.map((p) => ({
+              id: p.id,
+              name: p.name,
+              stock: p.stock,
+              minStock: p.minStock,
+            })),
           },
         },
       });
 
-      return { success: true, message: 'Alerta de estoque enviado com sucesso' };
+      return {
+        success: true,
+        message: "Alerta de estoque enviado com sucesso",
+      };
     } catch (error) {
-      console.error('Low stock alert email error:', error);
-      return { success: false, message: 'Falha ao enviar alerta de estoque' };
+      console.error("Low stock alert email error:", error);
+      return { success: false, message: "Falha ao enviar alerta de estoque" };
     }
   }
 
   private generateLowStockAlertEmailHtml(products: any[]): string {
-    const productRows = products.map(product => `
+    const productRows = products
+      .map(
+        (product) => `
       <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #eee;">${product.sku || 'N/A'}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #eee;">${product.sku || "N/A"}</td>
         <td style="padding: 12px; border-bottom: 1px solid #eee;">${product.name}</td>
         <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; color: #e53e3e; font-weight: bold;">${product.stock}</td>
         <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${product.minStock}</td>
       </tr>
-    `).join('');
+    `,
+      )
+      .join("");
 
     return `
 <!DOCTYPE html>
@@ -741,38 +804,38 @@ export class NotificationsService {
 
   private getStatusEmoji(status: string): string {
     const emojis: Record<string, string> = {
-      CREATED: '🔧',
-      PENDING: '🟡',
-      IN_PROGRESS: '🔵',
-      WAITING_PARTS: '📦',
-      COMPLETED: '✅',
-      DELIVERED: '🎉',
-      CANCELLED: '❌',
+      CREATED: "🔧",
+      PENDING: "🟡",
+      IN_PROGRESS: "🔵",
+      WAITING_PARTS: "📦",
+      COMPLETED: "✅",
+      DELIVERED: "🎉",
+      CANCELLED: "❌",
     };
-    return emojis[status] || '📋';
+    return emojis[status] || "📋";
   }
 
   private getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      CREATED: 'Criado',
-      PENDING: 'Pendente',
-      IN_PROGRESS: 'Em Andamento',
-      WAITING_PARTS: 'Aguardando Peças',
-      COMPLETED: 'Concluído',
-      DELIVERED: 'Entregue',
-      CANCELLED: 'Cancelado',
+      CREATED: "Criado",
+      PENDING: "Pendente",
+      IN_PROGRESS: "Em Andamento",
+      WAITING_PARTS: "Aguardando Peças",
+      COMPLETED: "Concluído",
+      DELIVERED: "Entregue",
+      CANCELLED: "Cancelado",
     };
     return labels[status] || status;
   }
 
   private getPaymentMethodLabel(method: string): string {
     const labels: Record<string, string> = {
-      CASH: 'Dinheiro',
-      CREDIT_CARD: 'Cartão de Crédito',
-      DEBIT_CARD: 'Cartão de Débito',
-      PIX: 'PIX',
-      BANK_TRANSFER: 'Transferência',
-      BOLETO: 'Boleto',
+      CASH: "Dinheiro",
+      CREDIT_CARD: "Cartão de Crédito",
+      DEBIT_CARD: "Cartão de Débito",
+      PIX: "PIX",
+      BANK_TRANSFER: "Transferência",
+      BOLETO: "Boleto",
     };
     return labels[method] || method;
   }

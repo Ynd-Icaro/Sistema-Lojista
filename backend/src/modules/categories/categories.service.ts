@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateCategoryDto, UpdateCategoryDto } from "./dto/category.dto";
 
 @Injectable()
 export class CategoriesService {
@@ -16,7 +20,7 @@ export class CategoriesService {
           select: { products: true },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 
@@ -42,7 +46,7 @@ export class CategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException('Categoria não encontrada');
+      throw new NotFoundException("Categoria não encontrada");
     }
 
     return category;
@@ -55,7 +59,7 @@ export class CategoriesService {
     });
 
     if (existing) {
-      throw new BadRequestException('Categoria com este nome já existe');
+      throw new BadRequestException("Categoria com este nome já existe");
     }
 
     return this.prisma.category.create({
@@ -72,15 +76,15 @@ export class CategoriesService {
     // Check if name already exists (excluding current)
     if (dto.name) {
       const existing = await this.prisma.category.findFirst({
-        where: { 
-          name: dto.name, 
+        where: {
+          name: dto.name,
           tenantId,
           NOT: { id },
         },
       });
 
       if (existing) {
-        throw new BadRequestException('Categoria com este nome já existe');
+        throw new BadRequestException("Categoria com este nome já existe");
       }
     }
 
@@ -95,13 +99,15 @@ export class CategoriesService {
 
     // Check if has products
     if (category._count.products > 0) {
-      throw new BadRequestException('Não é possível remover categoria com produtos vinculados');
+      throw new BadRequestException(
+        "Não é possível remover categoria com produtos vinculados",
+      );
     }
 
     await this.prisma.category.delete({
       where: { id },
     });
 
-    return { message: 'Categoria removida com sucesso' };
+    return { message: "Categoria removida com sucesso" };
   }
 }

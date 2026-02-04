@@ -1,24 +1,38 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
-import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
-import { UserRole, UserRoleType, UserStatus, UserStatusType } from '../../types';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import * as bcrypt from "bcrypt";
+import { CreateUserDto, UpdateUserDto } from "./dto/user.dto";
+import {
+  UserRole,
+  UserRoleType,
+  UserStatus,
+  UserStatusType,
+} from "../../types";
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(tenantId: string, page?: number | string, limit?: number | string, search?: string) {
+  async findAll(
+    tenantId: string,
+    page?: number | string,
+    limit?: number | string,
+    search?: string,
+  ) {
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 20;
     const skip = (pageNum - 1) * limitNum;
-    
+
     const where: any = { tenantId };
-    
+
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -39,7 +53,7 @@ export class UsersService {
           createdAt: true,
           updatedAt: true,
         },
-        orderBy: { name: 'asc' },
+        orderBy: { name: "asc" },
       }),
       this.prisma.user.count({ where }),
     ]);
@@ -81,7 +95,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException("Usuário não encontrado");
     }
 
     return user;
@@ -96,7 +110,7 @@ export class UsersService {
   async create(tenantId: string, dto: CreateUserDto) {
     const existingUser = await this.findByEmail(dto.email, tenantId);
     if (existingUser) {
-      throw new BadRequestException('Email já cadastrado');
+      throw new BadRequestException("Email já cadastrado");
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -165,7 +179,7 @@ export class UsersService {
       where: { id },
     });
 
-    return { message: 'Usuário removido com sucesso' };
+    return { message: "Usuário removido com sucesso" };
   }
 
   async updateStatus(id: string, tenantId: string, status: string) {

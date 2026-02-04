@@ -1,8 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsBoolean } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsOptional, IsString, IsBoolean } from "class-validator";
 
 export class ImportProductsDto {
-  @ApiProperty({ type: 'string', format: 'binary' })
+  @ApiProperty({ type: "string", format: "binary" })
   file: Express.Multer.File;
 
   @ApiPropertyOptional()
@@ -32,10 +32,10 @@ export class ExportProductsDto {
   @IsBoolean()
   includeVariations?: boolean;
 
-  @ApiPropertyOptional({ enum: ['xlsx', 'csv'] })
+  @ApiPropertyOptional({ enum: ["xlsx", "csv"] })
   @IsOptional()
   @IsString()
-  format?: 'xlsx' | 'csv';
+  format?: "xlsx" | "csv";
 }
 
 export class LinkVariationDto {

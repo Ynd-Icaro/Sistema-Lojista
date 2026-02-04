@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsEmail, IsArray, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEmail,
+  IsArray,
+  IsObject,
+} from "class-validator";
 
 export class SendEmailDto {
   @IsEmail()
@@ -36,7 +42,7 @@ export class ServiceOrderNotificationDto {
   serviceOrderId: string;
 
   @IsString()
-  type: 'CREATED' | 'IN_PROGRESS' | 'COMPLETED' | 'DELIVERED';
+  type: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "DELIVERED";
 }
 
 export class NotificationTemplateDto {

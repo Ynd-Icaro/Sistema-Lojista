@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCustomerDto, UpdateCustomerDto, CustomerQueryDto } from './dto/customer.dto';
-import { toISODateTime } from '../../common/utils/data-sanitizer';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import {
+  CreateCustomerDto,
+  UpdateCustomerDto,
+  CustomerQueryDto,
+} from "./dto/customer.dto";
+import { toISODateTime } from "../../common/utils/data-sanitizer";
 
 @Injectable()
 export class CustomersService {
@@ -15,10 +23,10 @@ export class CustomersService {
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
-        { cpfCnpj: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
+        { cpfCnpj: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -31,7 +39,7 @@ export class CustomersService {
         where,
         skip,
         take: limit,
-        orderBy: { name: 'asc' },
+        orderBy: { name: "asc" },
       }),
       this.prisma.customer.count({ where }),
     ]);
@@ -53,7 +61,7 @@ export class CustomersService {
       include: {
         sales: {
           take: 10,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           select: {
             id: true,
             code: true,
@@ -64,7 +72,7 @@ export class CustomersService {
         },
         serviceOrders: {
           take: 10,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           select: {
             id: true,
             code: true,
@@ -84,7 +92,7 @@ export class CustomersService {
     });
 
     if (!customer) {
-      throw new NotFoundException('Cliente não encontrado');
+      throw new NotFoundException("Cliente não encontrado");
     }
 
     return customer;
@@ -101,7 +109,7 @@ export class CustomersService {
     if (dto.cpfCnpj) {
       const existing = await this.findByDocument(dto.cpfCnpj, tenantId);
       if (existing) {
-        throw new BadRequestException('CPF/CNPJ já cadastrado');
+        throw new BadRequestException("CPF/CNPJ já cadastrado");
       }
     }
 
@@ -144,7 +152,7 @@ export class CustomersService {
     if (dto.cpfCnpj && dto.cpfCnpj !== customer.cpfCnpj) {
       const existing = await this.findByDocument(dto.cpfCnpj, tenantId);
       if (existing) {
-        throw new BadRequestException('CPF/CNPJ já cadastrado');
+        throw new BadRequestException("CPF/CNPJ já cadastrado");
       }
     }
 
@@ -159,12 +167,14 @@ export class CustomersService {
     if (dto.whatsapp !== undefined) data.whatsapp = dto.whatsapp || null;
     if (dto.cpfCnpj !== undefined) data.cpfCnpj = dto.cpfCnpj || null;
     if (dto.rg !== undefined) data.rg = dto.rg || null;
-    if (dto.birthDate !== undefined) data.birthDate = toISODateTime(dto.birthDate) || null;
+    if (dto.birthDate !== undefined)
+      data.birthDate = toISODateTime(dto.birthDate) || null;
     if (dto.gender !== undefined) data.gender = dto.gender || null;
     if (dto.address !== undefined) data.address = dto.address || null;
     if (dto.number !== undefined) data.number = dto.number || null;
     if (dto.complement !== undefined) data.complement = dto.complement || null;
-    if (dto.neighborhood !== undefined) data.neighborhood = dto.neighborhood || null;
+    if (dto.neighborhood !== undefined)
+      data.neighborhood = dto.neighborhood || null;
     if (dto.city !== undefined) data.city = dto.city || null;
     if (dto.state !== undefined) data.state = dto.state || null;
     if (dto.zipCode !== undefined) data.zipCode = dto.zipCode || null;
@@ -188,20 +198,20 @@ export class CustomersService {
         where: { id },
         data: { isActive: false },
       });
-      return { message: 'Cliente desativado (possui vendas/OS vinculadas)' };
+      return { message: "Cliente desativado (possui vendas/OS vinculadas)" };
     }
 
     await this.prisma.customer.delete({
       where: { id },
     });
 
-    return { message: 'Cliente removido com sucesso' };
+    return { message: "Cliente removido com sucesso" };
   }
 
   async getTopCustomers(tenantId: string, limit = 10) {
     return this.prisma.customer.findMany({
       where: { tenantId, isActive: true },
-      orderBy: { totalSpent: 'desc' },
+      orderBy: { totalSpent: "desc" },
       take: limit,
       select: {
         id: true,
@@ -233,7 +243,7 @@ export class CustomersService {
     const total = await this.prisma.sale.aggregate({
       where: {
         customerId,
-        status: 'COMPLETED',
+        status: "COMPLETED",
       },
       _sum: {
         total: true,
@@ -241,8 +251,8 @@ export class CustomersService {
     });
 
     const lastSale = await this.prisma.sale.findFirst({
-      where: { customerId, status: 'COMPLETED' },
-      orderBy: { createdAt: 'desc' },
+      where: { customerId, status: "COMPLETED" },
+      orderBy: { createdAt: "desc" },
       select: { createdAt: true },
     });
 

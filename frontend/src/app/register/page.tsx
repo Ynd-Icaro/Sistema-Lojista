@@ -108,18 +108,6 @@ export default function RegisterPage() {
       setIsLoading(false);
     }
   };
-      } else if (errorMessage.includes('nome') && !errorMessage.includes('empresa')) {
-        setError('name', { message: errorMessage });
-      } else if (errorMessage.includes('senha')) {
-        setError('password', { message: errorMessage });
-      } else {
-        // Se não conseguir identificar o campo, mostrar toast
-        toast.error(errorMessage);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen min-h-[100dvh] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-3 sm:p-4 md:p-6 relative overflow-hidden">

@@ -1,5 +1,14 @@
-import { IsString, IsOptional, IsObject, IsDateString, IsNumber, IsArray, IsEnum, IsBoolean } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsString,
+  IsOptional,
+  IsObject,
+  IsDateString,
+  IsNumber,
+  IsArray,
+  IsEnum,
+  IsBoolean,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class ReportFiltersDto {
   @ApiPropertyOptional()

@@ -1,6 +1,14 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateSupplierDto, UpdateSupplierDto, SupplierQueryDto } from './dto/supplier.dto';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import {
+  CreateSupplierDto,
+  UpdateSupplierDto,
+  SupplierQueryDto,
+} from "./dto/supplier.dto";
 
 @Injectable()
 export class SuppliersService {
@@ -14,16 +22,16 @@ export class SuppliersService {
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { tradeName: { contains: search, mode: 'insensitive' } },
-        { cpfCnpj: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { contactPerson: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
+        { tradeName: { contains: search, mode: "insensitive" } },
+        { cpfCnpj: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { contactPerson: { contains: search, mode: "insensitive" } },
       ];
     }
 
     if (city) {
-      where.city = { contains: city, mode: 'insensitive' };
+      where.city = { contains: city, mode: "insensitive" };
     }
 
     if (state) {
@@ -44,7 +52,7 @@ export class SuppliersService {
             select: { products: true },
           },
         },
-        orderBy: { name: 'asc' },
+        orderBy: { name: "asc" },
       }),
       this.prisma.supplier.count({ where }),
     ]);
@@ -66,7 +74,7 @@ export class SuppliersService {
       include: {
         products: {
           take: 10,
-          orderBy: { name: 'asc' },
+          orderBy: { name: "asc" },
           select: {
             id: true,
             name: true,
@@ -83,7 +91,7 @@ export class SuppliersService {
     });
 
     if (!supplier) {
-      throw new NotFoundException('Fornecedor não encontrado');
+      throw new NotFoundException("Fornecedor não encontrado");
     }
 
     return supplier;
@@ -97,7 +105,9 @@ export class SuppliersService {
       });
 
       if (existing) {
-        throw new ConflictException('Já existe um fornecedor com este CPF/CNPJ');
+        throw new ConflictException(
+          "Já existe um fornecedor com este CPF/CNPJ",
+        );
       }
     }
 
@@ -117,15 +127,17 @@ export class SuppliersService {
     // Verificar se já existe outro fornecedor com mesmo CNPJ
     if (dto.cpfCnpj) {
       const existing = await this.prisma.supplier.findFirst({
-        where: { 
-          tenantId, 
+        where: {
+          tenantId,
           cpfCnpj: dto.cpfCnpj,
           NOT: { id },
         },
       });
 
       if (existing) {
-        throw new ConflictException('Já existe outro fornecedor com este CPF/CNPJ');
+        throw new ConflictException(
+          "Já existe outro fornecedor com este CPF/CNPJ",
+        );
       }
     }
 
@@ -145,13 +157,13 @@ export class SuppliersService {
 
     if (productsCount > 0) {
       throw new ConflictException(
-        `Não é possível excluir: ${productsCount} produto(s) vinculado(s) a este fornecedor`
+        `Não é possível excluir: ${productsCount} produto(s) vinculado(s) a este fornecedor`,
       );
     }
 
     await this.prisma.supplier.delete({ where: { id } });
 
-    return { message: 'Fornecedor excluído com sucesso' };
+    return { message: "Fornecedor excluído com sucesso" };
   }
 
   async getStats(tenantId: string) {
@@ -171,7 +183,7 @@ export class SuppliersService {
       where: { tenantId },
       take: 5,
       orderBy: {
-        products: { _count: 'desc' },
+        products: { _count: "desc" },
       },
       include: {
         _count: {
@@ -199,7 +211,7 @@ export class SuppliersService {
         tradeName: true,
         cpfCnpj: true,
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 }

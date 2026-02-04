@@ -1,1 +1,1 @@
-export * from './data-sanitizer';
+export * from "./data-sanitizer";

@@ -1,6 +1,16 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber, IsArray, ValidateNested, Min, IsEnum, IsDateString } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsArray,
+  ValidateNested,
+  Min,
+  IsEnum,
+  IsDateString,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
+import { Type, Transform } from "class-transformer";
 
 export class ServiceOrderItemDto {
   @ApiPropertyOptional()
@@ -8,7 +18,7 @@ export class ServiceOrderItemDto {
   @IsOptional()
   productId?: string;
 
-  @ApiProperty({ example: 'Troca de tela' })
+  @ApiProperty({ example: "Troca de tela" })
   @IsString()
   @IsNotEmpty()
   description: string;
@@ -27,12 +37,12 @@ export class ServiceOrderItemDto {
 export class CreateServiceOrderDto {
   @ApiProperty()
   @IsString()
-  @IsNotEmpty({ message: 'Cliente é obrigatório' })
+  @IsNotEmpty({ message: "Cliente é obrigatório" })
   customerId: string;
 
-  @ApiProperty({ example: 'Reparo de iPhone' })
+  @ApiProperty({ example: "Reparo de iPhone" })
   @IsString()
-  @IsNotEmpty({ message: 'Título é obrigatório' })
+  @IsNotEmpty({ message: "Título é obrigatório" })
   title: string;
 
   @ApiPropertyOptional()
@@ -40,17 +50,17 @@ export class CreateServiceOrderDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ example: 'Smartphone' })
+  @ApiPropertyOptional({ example: "Smartphone" })
   @IsString()
   @IsOptional()
   deviceType?: string;
 
-  @ApiPropertyOptional({ example: 'Apple' })
+  @ApiPropertyOptional({ example: "Apple" })
   @IsString()
   @IsOptional()
   deviceBrand?: string;
 
-  @ApiPropertyOptional({ example: 'iPhone 14 Pro' })
+  @ApiPropertyOptional({ example: "iPhone 14 Pro" })
   @IsString()
   @IsOptional()
   deviceModel?: string;
@@ -82,7 +92,7 @@ export class CreateServiceOrderDto {
   @IsOptional()
   discount?: number;
 
-  @ApiPropertyOptional({ enum: ['LOW', 'NORMAL', 'HIGH', 'URGENT'] })
+  @ApiPropertyOptional({ enum: ["LOW", "NORMAL", "HIGH", "URGENT"] })
   @IsString()
   @IsOptional()
   priority?: string;
@@ -139,7 +149,16 @@ export class ServiceOrderQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ enum: ['PENDING', 'IN_PROGRESS', 'WAITING_PARTS', 'COMPLETED', 'DELIVERED', 'CANCELLED'] })
+  @ApiPropertyOptional({
+    enum: [
+      "PENDING",
+      "IN_PROGRESS",
+      "WAITING_PARTS",
+      "COMPLETED",
+      "DELIVERED",
+      "CANCELLED",
+    ],
+  })
   @IsOptional()
   @IsString()
   status?: string;

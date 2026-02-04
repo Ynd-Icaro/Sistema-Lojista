@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class DashboardService {
@@ -9,7 +9,11 @@ export class DashboardService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const startOfLastMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() - 1,
+      1,
+    );
     const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
 
     const [
@@ -17,15 +21,15 @@ export class DashboardService {
       salesThisMonth,
       revenueThisMonth,
       customersThisMonth,
-      
+
       // Last month metrics
       salesLastMonth,
       revenueLastMonth,
-      
+
       // Today metrics
       salesToday,
       revenueToday,
-      
+
       // General counts
       totalProducts,
       totalCustomers,
@@ -34,73 +38,94 @@ export class DashboardService {
     ] = await Promise.all([
       // Sales this month
       this.prisma.sale.count({
-        where: { tenantId, status: 'COMPLETED', createdAt: { gte: startOfMonth } },
+        where: {
+          tenantId,
+          status: "COMPLETED",
+          createdAt: { gte: startOfMonth },
+        },
       }),
-      
+
       // Revenue this month
       this.prisma.sale.aggregate({
-        where: { tenantId, status: 'COMPLETED', createdAt: { gte: startOfMonth } },
+        where: {
+          tenantId,
+          status: "COMPLETED",
+          createdAt: { gte: startOfMonth },
+        },
         _sum: { total: true },
       }),
-      
+
       // New customers this month
       this.prisma.customer.count({
         where: { tenantId, createdAt: { gte: startOfMonth } },
       }),
-      
+
       // Sales last month
       this.prisma.sale.count({
-        where: { tenantId, status: 'COMPLETED', createdAt: { gte: startOfLastMonth, lte: endOfLastMonth } },
+        where: {
+          tenantId,
+          status: "COMPLETED",
+          createdAt: { gte: startOfLastMonth, lte: endOfLastMonth },
+        },
       }),
-      
+
       // Revenue last month
       this.prisma.sale.aggregate({
-        where: { tenantId, status: 'COMPLETED', createdAt: { gte: startOfLastMonth, lte: endOfLastMonth } },
+        where: {
+          tenantId,
+          status: "COMPLETED",
+          createdAt: { gte: startOfLastMonth, lte: endOfLastMonth },
+        },
         _sum: { total: true },
       }),
-      
+
       // Sales today
       this.prisma.sale.count({
-        where: { tenantId, status: 'COMPLETED', createdAt: { gte: today } },
+        where: { tenantId, status: "COMPLETED", createdAt: { gte: today } },
       }),
-      
+
       // Revenue today
       this.prisma.sale.aggregate({
-        where: { tenantId, status: 'COMPLETED', createdAt: { gte: today } },
+        where: { tenantId, status: "COMPLETED", createdAt: { gte: today } },
         _sum: { total: true },
       }),
-      
+
       // Total products
       this.prisma.product.count({
         where: { tenantId, isActive: true },
       }),
-      
+
       // Total customers
       this.prisma.customer.count({
         where: { tenantId, isActive: true },
       }),
-      
+
       // Low stock products
       this.prisma.product.count({
         where: { tenantId, isActive: true, stock: { lte: 5 } },
       }),
-      
+
       // Pending service orders
       this.prisma.serviceOrder.count({
-        where: { tenantId, status: { in: ['PENDING', 'IN_PROGRESS', 'WAITING_PARTS'] } },
+        where: {
+          tenantId,
+          status: { in: ["PENDING", "IN_PROGRESS", "WAITING_PARTS"] },
+        },
       }),
     ]);
 
     // Calculate growth percentages
     const currentRevenue = Number(revenueThisMonth._sum.total || 0);
     const lastRevenue = Number(revenueLastMonth._sum.total || 0);
-    const revenueGrowth = lastRevenue > 0 
-      ? ((currentRevenue - lastRevenue) / lastRevenue) * 100 
-      : 0;
+    const revenueGrowth =
+      lastRevenue > 0
+        ? ((currentRevenue - lastRevenue) / lastRevenue) * 100
+        : 0;
 
-    const salesGrowth = salesLastMonth > 0 
-      ? ((salesThisMonth - salesLastMonth) / salesLastMonth) * 100 
-      : 0;
+    const salesGrowth =
+      salesLastMonth > 0
+        ? ((salesThisMonth - salesLastMonth) / salesLastMonth) * 100
+        : 0;
 
     return {
       today: {
@@ -131,7 +156,7 @@ export class DashboardService {
     const sales = await this.prisma.sale.findMany({
       where: {
         tenantId,
-        status: 'COMPLETED',
+        status: "COMPLETED",
         createdAt: { gte: startDate },
       },
       select: {
@@ -146,13 +171,13 @@ export class DashboardService {
     for (let i = 0; i <= days; i++) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const key = date.toISOString().split('T')[0];
-      const dayName = date.toLocaleDateString('pt-BR', { weekday: 'short' });
+      const key = date.toISOString().split("T")[0];
+      const dayName = date.toLocaleDateString("pt-BR", { weekday: "short" });
       dailyMap.set(key, { date: key, day: dayName, total: 0, count: 0 });
     }
 
     for (const sale of sales) {
-      const key = sale.createdAt.toISOString().split('T')[0];
+      const key = sale.createdAt.toISOString().split("T")[0];
       if (dailyMap.has(key)) {
         const day = dailyMap.get(key);
         day.total += Number(sale.total);
@@ -169,11 +194,11 @@ export class DashboardService {
     startOfMonth.setHours(0, 0, 0, 0);
 
     const topProducts = await this.prisma.saleItem.groupBy({
-      by: ['productId'],
+      by: ["productId"],
       where: {
         sale: {
           tenantId,
-          status: 'COMPLETED',
+          status: "COMPLETED",
           createdAt: { gte: startOfMonth },
         },
       },
@@ -183,7 +208,7 @@ export class DashboardService {
       },
       orderBy: {
         _sum: {
-          total: 'desc',
+          total: "desc",
         },
       },
       take: limit,
@@ -204,7 +229,7 @@ export class DashboardService {
       const product = products.find((p) => p.id === tp.productId);
       return {
         id: tp.productId,
-        name: product?.name || 'Produto removido',
+        name: product?.name || "Produto removido",
         sku: product?.sku,
         quantity: tp._sum.quantity || 0,
         revenue: Number(tp._sum.total || 0),
@@ -214,9 +239,9 @@ export class DashboardService {
 
   async getRecentSales(tenantId: string, limit = 5) {
     return this.prisma.sale.findMany({
-      where: { tenantId, status: 'COMPLETED' },
+      where: { tenantId, status: "COMPLETED" },
       take: limit,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         customer: {
           select: { id: true, name: true },
@@ -236,7 +261,7 @@ export class DashboardService {
         stock: { lte: 5 },
       },
       take: limit,
-      orderBy: { stock: 'asc' },
+      orderBy: { stock: "asc" },
       select: {
         id: true,
         name: true,
@@ -251,13 +276,10 @@ export class DashboardService {
     return this.prisma.serviceOrder.findMany({
       where: {
         tenantId,
-        status: { in: ['PENDING', 'IN_PROGRESS', 'WAITING_PARTS'] },
+        status: { in: ["PENDING", "IN_PROGRESS", "WAITING_PARTS"] },
       },
       take: limit,
-      orderBy: [
-        { priority: 'desc' },
-        { createdAt: 'asc' },
-      ],
+      orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
       include: {
         customer: {
           select: { id: true, name: true, phone: true },
@@ -274,8 +296,8 @@ export class DashboardService {
       this.prisma.transaction.aggregate({
         where: {
           tenantId,
-          type: 'INCOME',
-          status: 'CONFIRMED',
+          type: "INCOME",
+          status: "CONFIRMED",
           paidDate: { gte: startOfMonth },
         },
         _sum: { amount: true },
@@ -283,8 +305,8 @@ export class DashboardService {
       this.prisma.transaction.aggregate({
         where: {
           tenantId,
-          type: 'EXPENSE',
-          status: 'CONFIRMED',
+          type: "EXPENSE",
+          status: "CONFIRMED",
           paidDate: { gte: startOfMonth },
         },
         _sum: { amount: true },
@@ -292,7 +314,7 @@ export class DashboardService {
       this.prisma.transaction.aggregate({
         where: {
           tenantId,
-          status: 'PENDING',
+          status: "PENDING",
         },
         _sum: { amount: true },
         _count: true,

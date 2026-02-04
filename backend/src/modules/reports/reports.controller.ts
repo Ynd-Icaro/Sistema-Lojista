@@ -8,196 +8,212 @@ import {
   UseGuards,
   Res,
   Header,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Response } from 'express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { ReportsService } from './reports.service';
-import { ReportFiltersDto, SavePresetDto } from './dto/reports.dto';
+} from "@nestjs/common";
+import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Response } from "express";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { ReportsService } from "./reports.service";
+import { ReportFiltersDto, SavePresetDto } from "./dto/reports.dto";
 
-@ApiTags('reports')
-@Controller('reports')
+@ApiTags("reports")
+@Controller("reports")
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
-  @Post('sales')
+  @Post("sales")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Gerar relatório de vendas' })
+  @ApiOperation({ summary: "Gerar relatório de vendas" })
   generateSalesReport(
-    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser("tenantId") tenantId: string,
     @Body() filters: ReportFiltersDto,
   ) {
     return this.reportsService.generateSalesReport(tenantId, filters);
   }
 
-  @Post('products')
+  @Post("products")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Gerar relatório de produtos' })
+  @ApiOperation({ summary: "Gerar relatório de produtos" })
   generateProductsReport(
-    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser("tenantId") tenantId: string,
     @Body() filters: ReportFiltersDto,
   ) {
     return this.reportsService.generateProductsReport(tenantId, filters);
   }
 
-  @Post('customers')
+  @Post("customers")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Gerar relatório de clientes' })
+  @ApiOperation({ summary: "Gerar relatório de clientes" })
   generateCustomersReport(
-    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser("tenantId") tenantId: string,
     @Body() filters: ReportFiltersDto,
   ) {
     return this.reportsService.generateCustomersReport(tenantId, filters);
   }
 
-  @Post('financial')
+  @Post("financial")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Gerar relatório financeiro' })
+  @ApiOperation({ summary: "Gerar relatório financeiro" })
   generateFinancialReport(
-    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser("tenantId") tenantId: string,
     @Body() filters: ReportFiltersDto,
   ) {
     return this.reportsService.generateFinancialReport(tenantId, filters);
   }
 
-  @Post('serviceOrders')
+  @Post("serviceOrders")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Gerar relatório de ordens de serviço' })
+  @ApiOperation({ summary: "Gerar relatório de ordens de serviço" })
   generateServiceOrdersReport(
-    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser("tenantId") tenantId: string,
     @Body() filters: ReportFiltersDto,
   ) {
     return this.reportsService.generateServiceOrdersReport(tenantId, filters);
   }
 
-  @Post('invoices')
+  @Post("invoices")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Gerar relatório de notas fiscais' })
+  @ApiOperation({ summary: "Gerar relatório de notas fiscais" })
   generateInvoicesReport(
-    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser("tenantId") tenantId: string,
     @Body() filters: ReportFiltersDto,
   ) {
     return this.reportsService.generateInvoicesReport(tenantId, filters);
   }
 
-  @Post(':reportType')
+  @Post(":reportType")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Gerar relatório genérico' })
+  @ApiOperation({ summary: "Gerar relatório genérico" })
   generateReport(
-    @Param('reportType') reportType: string,
-    @CurrentUser('tenantId') tenantId: string,
+    @Param("reportType") reportType: string,
+    @CurrentUser("tenantId") tenantId: string,
     @Body() filters: ReportFiltersDto,
   ) {
     return this.reportsService.generateReport(tenantId, reportType, filters);
   }
 
   // ========== EXPORT ENDPOINTS ==========
-  @Post(':reportType/export/pdf')
+  @Post(":reportType/export/pdf")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Header('Content-Type', 'application/pdf')
-  @ApiOperation({ summary: 'Exportar relatório em PDF' })
+  @Header("Content-Type", "application/pdf")
+  @ApiOperation({ summary: "Exportar relatório em PDF" })
   async exportPdf(
-    @Param('reportType') reportType: string,
-    @CurrentUser('tenantId') tenantId: string,
+    @Param("reportType") reportType: string,
+    @CurrentUser("tenantId") tenantId: string,
     @Body() filters: ReportFiltersDto,
     @Res() res: Response,
   ) {
     // Generate report data first
     const data = await this.getReportData(reportType, tenantId, filters);
-    
+
     // Generate HTML for PDF
     const html = this.reportsService.generatePdfHtml(reportType, data, filters);
-    
+
     // For now, return HTML - in production use puppeteer to generate PDF
     res.set({
-      'Content-Type': 'text/html',
-      'Content-Disposition': `attachment; filename="relatorio-${reportType}.html"`,
+      "Content-Type": "text/html",
+      "Content-Disposition": `attachment; filename="relatorio-${reportType}.html"`,
     });
     return res.send(html);
   }
 
-  @Post(':reportType/export/excel')
+  @Post(":reportType/export/excel")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  @ApiOperation({ summary: 'Exportar relatório em Excel' })
+  @Header(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  )
+  @ApiOperation({ summary: "Exportar relatório em Excel" })
   async exportExcel(
-    @Param('reportType') reportType: string,
-    @CurrentUser('tenantId') tenantId: string,
+    @Param("reportType") reportType: string,
+    @CurrentUser("tenantId") tenantId: string,
     @Body() filters: ReportFiltersDto,
     @Res() res: Response,
   ) {
     // Generate report data first
     const data = await this.getReportData(reportType, tenantId, filters);
-    
+
     // Generate Excel buffer
     const buffer = await this.reportsService.exportToExcel(reportType, data);
-    
+
     res.set({
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="relatorio-${reportType}.xlsx"`,
-      'Content-Length': buffer.length,
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="relatorio-${reportType}.xlsx"`,
+      "Content-Length": buffer.length,
     });
     return res.send(buffer);
   }
 
   // ========== PRESETS ==========
-  @Get('presets')
+  @Get("presets")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar presets de relatórios' })
-  getPresets(@CurrentUser('tenantId') tenantId: string) {
+  @ApiOperation({ summary: "Listar presets de relatórios" })
+  getPresets(@CurrentUser("tenantId") tenantId: string) {
     return this.reportsService.getPresets(tenantId);
   }
 
-  @Post('presets')
+  @Post("presets")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Salvar preset de relatório' })
+  @ApiOperation({ summary: "Salvar preset de relatório" })
   savePreset(
-    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser("tenantId") tenantId: string,
     @Body() dto: SavePresetDto,
   ) {
-    return this.reportsService.savePreset(tenantId, dto.name, dto.reportType, dto.filters);
+    return this.reportsService.savePreset(
+      tenantId,
+      dto.name,
+      dto.reportType,
+      dto.filters,
+    );
   }
 
-  @Delete('presets/:id')
+  @Delete("presets/:id")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Excluir preset de relatório' })
+  @ApiOperation({ summary: "Excluir preset de relatório" })
   deletePreset(
-    @Param('id') id: string,
-    @CurrentUser('tenantId') tenantId: string,
+    @Param("id") id: string,
+    @CurrentUser("tenantId") tenantId: string,
   ) {
     return this.reportsService.deletePreset(tenantId, id);
   }
 
   // ========== HELPER ==========
-  private async getReportData(reportType: string, tenantId: string, filters: ReportFiltersDto) {
+  private async getReportData(
+    reportType: string,
+    tenantId: string,
+    filters: ReportFiltersDto,
+  ) {
     switch (reportType) {
-      case 'sales':
+      case "sales":
         return this.reportsService.generateSalesReport(tenantId, filters);
-      case 'products':
+      case "products":
         return this.reportsService.generateProductsReport(tenantId, filters);
-      case 'customers':
+      case "customers":
         return this.reportsService.generateCustomersReport(tenantId, filters);
-      case 'financial':
+      case "financial":
         return this.reportsService.generateFinancialReport(tenantId, filters);
-      case 'serviceOrders':
-        return this.reportsService.generateServiceOrdersReport(tenantId, filters);
-      case 'invoices':
+      case "serviceOrders":
+        return this.reportsService.generateServiceOrdersReport(
+          tenantId,
+          filters,
+        );
+      case "invoices":
         return this.reportsService.generateInvoicesReport(tenantId, filters);
       default:
-        throw new Error('Tipo de relatório inválido');
+        throw new Error("Tipo de relatório inválido");
     }
   }
 }

@@ -1,148 +1,177 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber, IsBoolean, IsEnum, Min, IsArray, IsDateString, Max } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsEnum,
+  Min,
+  IsArray,
+  IsDateString,
+  Max,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
+import { Type, Transform } from "class-transformer";
 
 export class CreateProductDto {
   // Identificação
-  @ApiProperty({ example: 'PROD001', description: 'Código SKU único do produto' })
-  @IsString({ message: 'SKU deve ser uma string' })
-  @IsNotEmpty({ message: 'SKU é obrigatório' })
+  @ApiProperty({
+    example: "PROD001",
+    description: "Código SKU único do produto",
+  })
+  @IsString({ message: "SKU deve ser uma string" })
+  @IsNotEmpty({ message: "SKU é obrigatório" })
   sku: string;
 
-  @ApiPropertyOptional({ example: '7891234567890', description: 'Código de barras' })
-  @IsString({ message: 'Código de barras deve ser uma string' })
+  @ApiPropertyOptional({
+    example: "7891234567890",
+    description: "Código de barras",
+  })
+  @IsString({ message: "Código de barras deve ser uma string" })
   @IsOptional()
   barcode?: string;
 
-  @ApiPropertyOptional({ example: '7891234567890', description: 'Código GTIN/EAN' })
-  @IsString({ message: 'GTIN deve ser uma string' })
+  @ApiPropertyOptional({
+    example: "7891234567890",
+    description: "Código GTIN/EAN",
+  })
+  @IsString({ message: "GTIN deve ser uma string" })
   @IsOptional()
   gtin?: string;
 
-  @ApiProperty({ example: 'iPhone 15 Pro Max', description: 'Nome do produto' })
-  @IsString({ message: 'Nome deve ser uma string' })
-  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  @ApiProperty({ example: "iPhone 15 Pro Max", description: "Nome do produto" })
+  @IsString({ message: "Nome deve ser uma string" })
+  @IsNotEmpty({ message: "Nome é obrigatório" })
   name: string;
 
-  @ApiPropertyOptional({ example: 'Smartphone Apple iPhone 15 Pro Max 256GB', description: 'Descrição completa' })
-  @IsString({ message: 'Descrição deve ser uma string' })
+  @ApiPropertyOptional({
+    example: "Smartphone Apple iPhone 15 Pro Max 256GB",
+    description: "Descrição completa",
+  })
+  @IsString({ message: "Descrição deve ser uma string" })
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ example: 'iPhone 15 - o mais avançado', description: 'Descrição curta' })
-  @IsString({ message: 'Descrição curta deve ser uma string' })
+  @ApiPropertyOptional({
+    example: "iPhone 15 - o mais avançado",
+    description: "Descrição curta",
+  })
+  @IsString({ message: "Descrição curta deve ser uma string" })
   @IsOptional()
   shortDescription?: string;
 
-  @ApiPropertyOptional({ example: 'iPhone 15', description: 'Nome para importação' })
-  @IsString({ message: 'Nome para importação deve ser uma string' })
+  @ApiPropertyOptional({
+    example: "iPhone 15",
+    description: "Nome para importação",
+  })
+  @IsString({ message: "Nome para importação deve ser uma string" })
   @IsOptional()
   importName?: string;
 
   // Categoria e Fornecedor
-  @ApiPropertyOptional({ description: 'ID da categoria' })
-  @IsString({ message: 'ID da categoria deve ser uma string' })
+  @ApiPropertyOptional({ description: "ID da categoria" })
+  @IsString({ message: "ID da categoria deve ser uma string" })
   @IsOptional()
   categoryId?: string;
 
-  @ApiPropertyOptional({ description: 'ID do fornecedor' })
-  @IsString({ message: 'ID do fornecedor deve ser uma string' })
+  @ApiPropertyOptional({ description: "ID do fornecedor" })
+  @IsString({ message: "ID do fornecedor deve ser uma string" })
   @IsOptional()
   supplierId?: string;
 
-  @ApiPropertyOptional({ example: 'FORN-001' })
+  @ApiPropertyOptional({ example: "FORN-001" })
   @IsString()
   @IsOptional()
   supplierCode?: string;
 
-  @ApiPropertyOptional({ example: 'Fornecedor XYZ' })
+  @ApiPropertyOptional({ example: "Fornecedor XYZ" })
   @IsString()
   @IsOptional()
   supplierName?: string;
 
   // Características do Produto
-  @ApiPropertyOptional({ example: 'Apple' })
+  @ApiPropertyOptional({ example: "Apple" })
   @IsString()
   @IsOptional()
   brand?: string;
 
-  @ApiPropertyOptional({ example: 'A2849' })
+  @ApiPropertyOptional({ example: "A2849" })
   @IsString()
   @IsOptional()
   model?: string;
 
-  @ApiPropertyOptional({ example: 'Titanium Natural' })
+  @ApiPropertyOptional({ example: "Titanium Natural" })
   @IsString()
   @IsOptional()
   color?: string;
 
-  @ApiPropertyOptional({ example: '256GB' })
+  @ApiPropertyOptional({ example: "256GB" })
   @IsString()
   @IsOptional()
   size?: string;
 
-  @ApiPropertyOptional({ example: 'Titânio e Vidro' })
+  @ApiPropertyOptional({ example: "Titânio e Vidro" })
   @IsString()
   @IsOptional()
   material?: string;
 
-  @ApiPropertyOptional({ example: 'Unissex' })
+  @ApiPropertyOptional({ example: "Unissex" })
   @IsString()
   @IsOptional()
   gender?: string;
 
-  @ApiPropertyOptional({ example: 'Adulto' })
+  @ApiPropertyOptional({ example: "Adulto" })
   @IsString()
   @IsOptional()
   ageGroup?: string;
 
-  @ApiPropertyOptional({ example: '2024' })
+  @ApiPropertyOptional({ example: "2024" })
   @IsString()
   @IsOptional()
   season?: string;
 
-  @ApiPropertyOptional({ example: 'Premium' })
+  @ApiPropertyOptional({ example: "Premium" })
   @IsString()
   @IsOptional()
   style?: string;
 
   // Informações Fiscais
-  @ApiPropertyOptional({ example: '0' })
+  @ApiPropertyOptional({ example: "0" })
   @IsString()
   @IsOptional()
   origin?: string;
 
-  @ApiPropertyOptional({ example: '85171200' })
+  @ApiPropertyOptional({ example: "85171200" })
   @IsString()
   @IsOptional()
   ncm?: string;
 
-  @ApiPropertyOptional({ example: '2106010' })
+  @ApiPropertyOptional({ example: "2106010" })
   @IsString()
   @IsOptional()
   cest?: string;
 
-  @ApiPropertyOptional({ example: '5102' })
+  @ApiPropertyOptional({ example: "5102" })
   @IsString()
   @IsOptional()
   cfop?: string;
 
-  @ApiPropertyOptional({ example: '102' })
+  @ApiPropertyOptional({ example: "102" })
   @IsString()
   @IsOptional()
   csosn?: string;
 
-  @ApiPropertyOptional({ example: '00' })
+  @ApiPropertyOptional({ example: "00" })
   @IsString()
   @IsOptional()
   cstIcms?: string;
 
-  @ApiPropertyOptional({ example: '01' })
+  @ApiPropertyOptional({ example: "01" })
   @IsString()
   @IsOptional()
   cstPis?: string;
 
-  @ApiPropertyOptional({ example: '01' })
+  @ApiPropertyOptional({ example: "01" })
   @IsString()
   @IsOptional()
   cstCofins?: string;
@@ -190,7 +219,7 @@ export class CreateProductDto {
   @ApiProperty({ example: 7999.99 })
   @IsNumber()
   @Min(0)
-  @IsNotEmpty({ message: 'Preço de venda é obrigatório' })
+  @IsNotEmpty({ message: "Preço de venda é obrigatório" })
   @Type(() => Number)
   salePrice: number;
 
@@ -269,7 +298,7 @@ export class CreateProductDto {
   @Type(() => Number)
   reorderPoint?: number;
 
-  @ApiPropertyOptional({ example: 'UN' })
+  @ApiPropertyOptional({ example: "UN" })
   @IsString()
   @IsOptional()
   unit?: string;
@@ -318,17 +347,17 @@ export class CreateProductDto {
   depth?: number;
 
   // Localização
-  @ApiPropertyOptional({ example: 'A-01' })
+  @ApiPropertyOptional({ example: "A-01" })
   @IsString()
   @IsOptional()
   location?: string;
 
-  @ApiPropertyOptional({ example: 'Prateleira 3' })
+  @ApiPropertyOptional({ example: "Prateleira 3" })
   @IsString()
   @IsOptional()
   shelf?: string;
 
-  @ApiPropertyOptional({ example: 'Gaveta 5' })
+  @ApiPropertyOptional({ example: "Gaveta 5" })
   @IsString()
   @IsOptional()
   bin?: string;
@@ -350,7 +379,7 @@ export class CreateProductDto {
   videoUrl?: string;
 
   // Variações e Tags
-  @ApiPropertyOptional({ example: ['iphone', 'apple', 'smartphone'] })
+  @ApiPropertyOptional({ example: ["iphone", "apple", "smartphone"] })
   @IsArray()
   @IsOptional()
   tags?: string[];
@@ -489,27 +518,27 @@ export class ProductQueryDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => value === "true")
   isActive?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => value === "true")
   lowStock?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => value === "true")
   isVariation?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => value === "true")
   isFeatured?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => value === "true")
   isPromo?: boolean;
 }
 
@@ -520,11 +549,11 @@ export class UpdateStockDto {
   @Type(() => Number)
   quantity: number;
 
-  @ApiProperty({ enum: ['IN', 'OUT', 'ADJUSTMENT'] })
-  @IsEnum(['IN', 'OUT', 'ADJUSTMENT'])
-  type: 'IN' | 'OUT' | 'ADJUSTMENT';
+  @ApiProperty({ enum: ["IN", "OUT", "ADJUSTMENT"] })
+  @IsEnum(["IN", "OUT", "ADJUSTMENT"])
+  type: "IN" | "OUT" | "ADJUSTMENT";
 
-  @ApiPropertyOptional({ example: 'Compra de fornecedor' })
+  @ApiPropertyOptional({ example: "Compra de fornecedor" })
   @IsString()
   @IsOptional()
   reason?: string;
@@ -552,12 +581,12 @@ export class CreateVariationDto {
   @IsNotEmpty()
   parentProductId: string;
 
-  @ApiProperty({ example: 'Azul' })
+  @ApiProperty({ example: "Azul" })
   @IsString()
   @IsOptional()
   color?: string;
 
-  @ApiProperty({ example: 'G' })
+  @ApiProperty({ example: "G" })
   @IsString()
   @IsOptional()
   size?: string;

@@ -92,21 +92,10 @@ export function useAuthHydration() {
   useEffect(() => {
     // Primeiro, tenta hidratar do cookie
     hydrateFromCookies();
-    
-    // Aguarda a hydration do zustand persist
-    const unsubFinishHydration = useAuthStore.persist.onFinishHydration(() => {
-      validateAndRestoreSession();
-    });
-    
-    // Se já hidratou, valida sessão
-    if (_hasHydrated) {
-      validateAndRestoreSession();
-    }
-    
-    return () => {
-      unsubFinishHydration();
-    };
-  }, [_hasHydrated, hydrateFromCookies, validateAndRestoreSession]);
+
+    // Valida sessão após hidratação dos cookies
+    validateAndRestoreSession();
+  }, [hydrateFromCookies, validateAndRestoreSession]);
 
   // Listener para mudanças de storage (para sincronizar entre abas)
   useEffect(() => {

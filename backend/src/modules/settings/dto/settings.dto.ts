@@ -1,5 +1,14 @@
-import { IsBoolean, IsEmail, IsOptional, IsString, IsNumber, IsArray, ValidateNested, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsArray,
+  ValidateNested,
+  IsEnum,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export class UpdateCompanyDto {
   @IsString()
@@ -77,21 +86,21 @@ export class UpdateNotificationsDto {
 }
 
 // Módulos do sistema
-export type SystemModule = 
-  | 'dashboard' 
-  | 'pdv' 
-  | 'vendas' 
-  | 'produtos' 
-  | 'categorias'
-  | 'clientes' 
-  | 'ordens-servico' 
-  | 'financeiro' 
-  | 'notas' 
-  | 'usuarios' 
-  | 'configuracoes';
+export type SystemModule =
+  | "dashboard"
+  | "pdv"
+  | "vendas"
+  | "produtos"
+  | "categorias"
+  | "clientes"
+  | "ordens-servico"
+  | "financeiro"
+  | "notas"
+  | "usuarios"
+  | "configuracoes";
 
 // Ações possíveis por módulo
-export type ModuleAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
+export type ModuleAction = "view" | "create" | "edit" | "delete" | "export";
 
 // Permissões por módulo
 export class ModulePermissionDto {
@@ -208,14 +217,14 @@ export class GeneralSettingsDto {
 // ====== PERMISSÕES INDIVIDUAIS POR USUÁRIO ======
 
 // Perfis de visualização predefinidos
-export type ViewProfile = 
-  | 'full' // Acesso completo (admin)
-  | 'manager' // Gerente - vê tudo menos config de sistema
-  | 'sales' // Consultor de vendas - produtos, vendas, clientes, PDV
-  | 'store' // Apenas loja - só PDV e ordens de serviço
-  | 'financial' // Financeiro - financeiro, vendas, relatórios
-  | 'viewer' // Somente visualização
-  | 'custom'; // Permissões customizadas
+export type ViewProfile =
+  | "full" // Acesso completo (admin)
+  | "manager" // Gerente - vê tudo menos config de sistema
+  | "sales" // Consultor de vendas - produtos, vendas, clientes, PDV
+  | "store" // Apenas loja - só PDV e ordens de serviço
+  | "financial" // Financeiro - financeiro, vendas, relatórios
+  | "viewer" // Somente visualização
+  | "custom"; // Permissões customizadas
 
 // Configuração de perfil de visualização
 export class ViewProfileConfigDto {

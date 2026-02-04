@@ -1,16 +1,21 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateInvitationDto, AcceptInvitationDto } from './dto/invitation.dto';
-import { v4 as uuidv4 } from 'uuid';
-import * as bcrypt from 'bcrypt';
-import { UserRole, UserRoleType } from '../../types';
-import { EmailService } from '../notifications/services/email.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateInvitationDto, AcceptInvitationDto } from "./dto/invitation.dto";
+import { v4 as uuidv4 } from "uuid";
+import * as bcrypt from "bcrypt";
+import { UserRole, UserRoleType } from "../../types";
+import { EmailService } from "../notifications/services/email.service";
 
 const roleLabels: Record<string, string> = {
-  ADMIN: 'Administrador',
-  MANAGER: 'Gerente',
-  SELLER: 'Vendedor',
-  VIEWER: 'Visualizador',
+  ADMIN: "Administrador",
+  MANAGER: "Gerente",
+  SELLER: "Vendedor",
+  VIEWER: "Visualizador",
 };
 
 @Injectable()
@@ -32,7 +37,7 @@ export class InvitationsService {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -46,7 +51,9 @@ export class InvitationsService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Já existe um usuário com este email nesta empresa');
+      throw new ConflictException(
+        "Já existe um usuário com este email nesta empresa",
+      );
     }
 
     // Verificar se já existe um convite pendente para este email
@@ -54,12 +61,14 @@ export class InvitationsService {
       where: {
         email: dto.email,
         tenantId,
-        status: 'PENDING',
+        status: "PENDING",
       },
     });
 
     if (existingInvitation) {
-      throw new ConflictException('Já existe um convite pendente para este email');
+      throw new ConflictException(
+        "Já existe um convite pendente para este email",
+      );
     }
 
     // Criar o convite com token único
@@ -70,7 +79,7 @@ export class InvitationsService {
     const invitation = await this.prisma.invitation.create({
       data: {
         email: dto.email,
-        role: (dto.role || 'SELLER') as UserRoleType,
+        role: (dto.role || "SELLER") as UserRoleType,
         token,
         expiresAt,
         tenantId,
@@ -92,10 +101,10 @@ export class InvitationsService {
     });
 
     // Gerar o link de convite
-    const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/invite/${token}`;
+    const inviteLink = `${process.env.FRONTEND_URL || "http://localhost:3000"}/invite/${token}`;
 
     // Enviar email com o convite
-    const userRole = dto.role || 'SELLER';
+    const userRole = dto.role || "SELLER";
     try {
       await this.emailService.send({
         to: dto.email,
@@ -109,7 +118,7 @@ export class InvitationsService {
         }),
       });
     } catch (error) {
-      console.error('Erro ao enviar email de convite:', error);
+      console.error("Erro ao enviar email de convite:", error);
       // Não lança erro para não impedir a criação do convite
     }
 
@@ -126,10 +135,10 @@ export class InvitationsService {
     role: string;
     expiresAt: Date;
   }): string {
-    const expiresFormatted = data.expiresAt.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+    const expiresFormatted = data.expiresAt.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
 
     return `
@@ -244,20 +253,22 @@ export class InvitationsService {
     });
 
     if (!invitation) {
-      throw new NotFoundException('Convite não encontrado');
+      throw new NotFoundException("Convite não encontrado");
     }
 
-    if (invitation.status !== 'PENDING') {
-      throw new BadRequestException('Este convite já foi utilizado ou cancelado');
+    if (invitation.status !== "PENDING") {
+      throw new BadRequestException(
+        "Este convite já foi utilizado ou cancelado",
+      );
     }
 
     if (new Date() > invitation.expiresAt) {
       // Atualizar status para expirado
       await this.prisma.invitation.update({
         where: { id: invitation.id },
-        data: { status: 'EXPIRED' },
+        data: { status: "EXPIRED" },
       });
-      throw new BadRequestException('Este convite expirou');
+      throw new BadRequestException("Este convite expirou");
     }
 
     return invitation;
@@ -275,7 +286,9 @@ export class InvitationsService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Já existe um usuário com este email nesta empresa');
+      throw new ConflictException(
+        "Já existe um usuário com este email nesta empresa",
+      );
     }
 
     // Criar o usuário
@@ -299,7 +312,7 @@ export class InvitationsService {
       // Atualizar status do convite
       await tx.invitation.update({
         where: { id: invitation.id },
-        data: { status: 'ACCEPTED' },
+        data: { status: "ACCEPTED" },
       });
 
       return newUser;
@@ -315,16 +328,16 @@ export class InvitationsService {
     });
 
     if (!invitation) {
-      throw new NotFoundException('Convite não encontrado');
+      throw new NotFoundException("Convite não encontrado");
     }
 
-    if (invitation.status !== 'PENDING') {
-      throw new BadRequestException('Este convite não pode ser cancelado');
+    if (invitation.status !== "PENDING") {
+      throw new BadRequestException("Este convite não pode ser cancelado");
     }
 
     return this.prisma.invitation.update({
       where: { id },
-      data: { status: 'CANCELLED' },
+      data: { status: "CANCELLED" },
     });
   }
 
@@ -341,7 +354,7 @@ export class InvitationsService {
     });
 
     if (!invitation) {
-      throw new NotFoundException('Convite não encontrado');
+      throw new NotFoundException("Convite não encontrado");
     }
 
     // Atualizar a data de expiração
@@ -351,7 +364,7 @@ export class InvitationsService {
     const updated = await this.prisma.invitation.update({
       where: { id },
       data: {
-        status: 'PENDING',
+        status: "PENDING",
         expiresAt,
       },
       include: {
@@ -363,7 +376,7 @@ export class InvitationsService {
       },
     });
 
-    const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/invite/${invitation.token}`;
+    const inviteLink = `${process.env.FRONTEND_URL || "http://localhost:3000"}/invite/${invitation.token}`;
 
     // Reenviar email
     try {
@@ -373,13 +386,13 @@ export class InvitationsService {
         html: this.generateInviteEmailHtml({
           inviteLink,
           tenantName: updated.tenant.name,
-          inviterName: invitation.inviter?.name || 'Um administrador',
+          inviterName: invitation.inviter?.name || "Um administrador",
           role: roleLabels[invitation.role] || invitation.role,
           expiresAt,
         }),
       });
     } catch (error) {
-      console.error('Erro ao reenviar email de convite:', error);
+      console.error("Erro ao reenviar email de convite:", error);
     }
 
     return {

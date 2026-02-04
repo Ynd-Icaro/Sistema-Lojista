@@ -1,9 +1,19 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber, IsEnum, IsArray, IsDateString, Min, ValidateNested } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsArray,
+  IsDateString,
+  Min,
+  ValidateNested,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Type, Transform } from "class-transformer";
 
 export class InvoiceItemDto {
-  @ApiProperty({ example: 'iPhone 15 Pro' })
+  @ApiProperty({ example: "iPhone 15 Pro" })
   @IsString()
   @IsNotEmpty()
   description: string;
@@ -25,8 +35,8 @@ export class InvoiceItemDto {
 }
 
 export class CreateInvoiceDto {
-  @ApiPropertyOptional({ enum: ['SALE', 'SERVICE', 'WARRANTY'] })
-  @IsEnum(['SALE', 'SERVICE', 'WARRANTY'])
+  @ApiPropertyOptional({ enum: ["SALE", "SERVICE", "WARRANTY"] })
+  @IsEnum(["SALE", "SERVICE", "WARRANTY"])
   @IsOptional()
   type?: string;
 
@@ -45,7 +55,7 @@ export class CreateInvoiceDto {
   @IsOptional()
   serviceOrderId?: string;
 
-  @ApiPropertyOptional({ example: '1' })
+  @ApiPropertyOptional({ example: "1" })
   @IsString()
   @IsOptional()
   series?: string;
@@ -74,12 +84,12 @@ export class CreateInvoiceDto {
   tax?: number;
 
   // Recipient info (if no customer)
-  @ApiPropertyOptional({ example: 'João Silva' })
+  @ApiPropertyOptional({ example: "João Silva" })
   @IsString()
   @IsOptional()
   recipientName?: string;
 
-  @ApiPropertyOptional({ example: '000.000.000-00' })
+  @ApiPropertyOptional({ example: "000.000.000-00" })
   @IsString()
   @IsOptional()
   recipientDoc?: string;
@@ -139,10 +149,10 @@ export class CreateInvoiceDto {
 }
 
 export class SendInvoiceDto {
-  @ApiProperty({ example: ['email', 'whatsapp'] })
+  @ApiProperty({ example: ["email", "whatsapp"] })
   @IsArray()
-  @IsEnum(['email', 'whatsapp'], { each: true })
-  methods: ('email' | 'whatsapp')[];
+  @IsEnum(["email", "whatsapp"], { each: true })
+  methods: ("email" | "whatsapp")[];
 }
 
 export class GenerateInvoiceDto {
@@ -156,8 +166,8 @@ export class GenerateInvoiceDto {
   @IsOptional()
   serviceOrderId?: string;
 
-  @ApiProperty({ enum: ['SALE', 'SERVICE', 'WARRANTY'], example: 'SALE' })
-  @IsEnum(['SALE', 'SERVICE', 'WARRANTY'])
+  @ApiProperty({ enum: ["SALE", "SERVICE", "WARRANTY"], example: "SALE" })
+  @IsEnum(["SALE", "SERVICE", "WARRANTY"])
   type: string;
 
   @ApiPropertyOptional({ example: 90 })
@@ -188,12 +198,12 @@ export class InvoiceQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ enum: ['SALE', 'SERVICE', 'WARRANTY'] })
+  @ApiPropertyOptional({ enum: ["SALE", "SERVICE", "WARRANTY"] })
   @IsOptional()
   @IsString()
   type?: string;
 
-  @ApiPropertyOptional({ enum: ['DRAFT', 'ISSUED', 'SENT', 'CANCELLED'] })
+  @ApiPropertyOptional({ enum: ["DRAFT", "ISSUED", "SENT", "CANCELLED"] })
   @IsOptional()
   @IsString()
   status?: string;

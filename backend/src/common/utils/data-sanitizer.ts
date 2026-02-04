@@ -2,19 +2,21 @@
  * Remove campos vazios (string vazia, null, undefined) de um objeto
  * Útil para limpar dados antes de enviar ao Prisma
  */
-export function sanitizeData<T extends Record<string, any>>(data: T): Partial<T> {
+export function sanitizeData<T extends Record<string, any>>(
+  data: T,
+): Partial<T> {
   const sanitized: Partial<T> = {};
 
   for (const [key, value] of Object.entries(data)) {
     // Ignora valores undefined, null ou strings vazias
-    if (value === undefined || value === null || value === '') {
+    if (value === undefined || value === null || value === "") {
       continue;
     }
 
     // Se for string, faz trim
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       const trimmed = value.trim();
-      if (trimmed !== '') {
+      if (trimmed !== "") {
         (sanitized as any)[key] = trimmed;
       }
     } else {
@@ -29,8 +31,13 @@ export function sanitizeData<T extends Record<string, any>>(data: T): Partial<T>
  * Converte uma string de data (YYYY-MM-DD) para DateTime ISO-8601
  * Retorna undefined se a data for inválida ou vazia
  */
-export function toISODateTime(dateString: string | Date | undefined | null): Date | undefined {
-  if (!dateString || (typeof dateString === 'string' && dateString.trim() === '')) {
+export function toISODateTime(
+  dateString: string | Date | undefined | null,
+): Date | undefined {
+  if (
+    !dateString ||
+    (typeof dateString === "string" && dateString.trim() === "")
+  ) {
     return undefined;
   }
 
@@ -40,7 +47,7 @@ export function toISODateTime(dateString: string | Date | undefined | null): Dat
   }
 
   // Se já estiver no formato ISO completo
-  if (dateString.includes('T')) {
+  if (dateString.includes("T")) {
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? undefined : date;
   }
@@ -62,11 +69,13 @@ export function toISODateTime(dateString: string | Date | undefined | null): Dat
   if (dayNum < 1 || dayNum > 31) return undefined;
 
   const date = new Date(yearNum, monthNum - 1, dayNum, 12, 0, 0, 0);
-  
+
   // Verifica se a data é válida (ex: 31 de fevereiro seria inválido)
-  if (date.getFullYear() !== yearNum || 
-      date.getMonth() !== monthNum - 1 || 
-      date.getDate() !== dayNum) {
+  if (
+    date.getFullYear() !== yearNum ||
+    date.getMonth() !== monthNum - 1 ||
+    date.getDate() !== dayNum
+  ) {
     return undefined;
   }
 
@@ -77,7 +86,7 @@ export function toISODateTime(dateString: string | Date | undefined | null): Dat
  * Converte um valor para número ou retorna undefined
  */
 export function toNumber(value: any): number | undefined {
-  if (value === undefined || value === null || value === '') {
+  if (value === undefined || value === null || value === "") {
     return undefined;
   }
   const num = Number(value);
@@ -88,11 +97,11 @@ export function toNumber(value: any): number | undefined {
  * Converte um valor para boolean ou retorna undefined
  */
 export function toBoolean(value: any): boolean | undefined {
-  if (value === undefined || value === null || value === '') {
+  if (value === undefined || value === null || value === "") {
     return undefined;
   }
-  if (typeof value === 'boolean') return value;
-  if (value === 'true' || value === '1') return true;
-  if (value === 'false' || value === '0') return false;
+  if (typeof value === "boolean") return value;
+  if (value === "true" || value === "1") return true;
+  if (value === "false" || value === "0") return false;
   return undefined;
 }

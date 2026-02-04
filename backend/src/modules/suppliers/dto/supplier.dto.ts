@@ -1,5 +1,13 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsEmail, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsEmail,
+  Min,
+  Max,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export class CreateSupplierDto {
   @IsString()

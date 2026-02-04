@@ -1,10 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CustomersService } from '../customers/customers.service';
-import { ProductsService } from '../products/products.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { CreateSaleDto, SaleQueryDto } from './dto/sale.dto';
-import { PaymentMethod, PaymentMethodType, TransactionStatus, TransactionStatusType } from '../../types';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CustomersService } from "../customers/customers.service";
+import { ProductsService } from "../products/products.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import { CreateSaleDto, SaleQueryDto } from "./dto/sale.dto";
+import {
+  PaymentMethod,
+  PaymentMethodType,
+  TransactionStatus,
+  TransactionStatusType,
+} from "../../types";
 
 @Injectable()
 export class SalesService {
@@ -16,15 +25,23 @@ export class SalesService {
   ) {}
 
   async findAll(tenantId: string, query: SaleQueryDto) {
-    const { page = 1, limit = 20, search, status, startDate, endDate, customerId } = query;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      status,
+      startDate,
+      endDate,
+      customerId,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: any = { tenantId };
 
     if (search) {
       where.OR = [
-        { code: { contains: search, mode: 'insensitive' } },
-        { customer: { name: { contains: search, mode: 'insensitive' } } },
+        { code: { contains: search, mode: "insensitive" } },
+        { customer: { name: { contains: search, mode: "insensitive" } } },
       ];
     }
 
@@ -58,7 +75,7 @@ export class SalesService {
             select: { items: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.sale.count({ where }),
     ]);
@@ -97,7 +114,7 @@ export class SalesService {
     });
 
     if (!sale) {
-      throw new NotFoundException('Venda não encontrada');
+      throw new NotFoundException("Venda não encontrada");
     }
 
     return sale;
@@ -107,24 +124,29 @@ export class SalesService {
     // Generate sale code
     const lastSale = await this.prisma.sale.findFirst({
       where: { tenantId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       select: { code: true },
     });
 
-    const nextNumber = lastSale 
-      ? parseInt(lastSale.code.replace('V', '')) + 1 
+    const nextNumber = lastSale
+      ? parseInt(lastSale.code.replace("V", "")) + 1
       : 1;
-    const code = `V${nextNumber.toString().padStart(6, '0')}`;
+    const code = `V${nextNumber.toString().padStart(6, "0")}`;
 
     // Calculate totals
     let subtotal = 0;
     const itemsData: any[] = [];
 
     for (const item of dto.items) {
-      const product = await this.productsService.findOne(item.productId, tenantId);
-      
+      const product = await this.productsService.findOne(
+        item.productId,
+        tenantId,
+      );
+
       if (product.stock < item.quantity) {
-        throw new BadRequestException(`Estoque insuficiente para ${product.name}`);
+        throw new BadRequestException(
+          `Estoque insuficiente para ${product.name}`,
+        );
       }
 
       const itemTotal = item.unitPrice * item.quantity - (item.discount || 0);
@@ -145,125 +167,139 @@ export class SalesService {
     const total = subtotal - discount + tax;
 
     // Pre-fetch all products for stock movements
-    const productIds = dto.items.map(item => item.productId);
+    const productIds = dto.items.map((item) => item.productId);
     const productsForStock = await this.prisma.product.findMany({
       where: { id: { in: productIds } },
       select: { id: true, stock: true },
     });
-    const productStockMap = new Map(productsForStock.map(p => [p.id, p.stock]));
+    const productStockMap = new Map(
+      productsForStock.map((p) => [p.id, p.stock]),
+    );
 
     // Create sale with items in transaction with extended timeout for PgBouncer
-    const sale = await this.prisma.$transaction(async (tx) => {
-      const newSale = await tx.sale.create({
-        data: {
-          tenantId,
-          userId,
-          customerId: dto.customerId,
-          code,
-          subtotal,
-          discount,
-          discountType: dto.discountType || 'FIXED',
-          tax,
-          total,
-          paidAmount: dto.paidAmount || total,
-          changeAmount: (dto.paidAmount || total) - total,
-          paymentMethod: (dto.paymentMethod || PaymentMethod.CASH) as PaymentMethodType,
-          paymentStatus: 'PAID',
-          status: 'COMPLETED',
-          notes: dto.notes,
-          completedAt: new Date(),
-          items: {
-            create: itemsData,
-          },
-          payments: dto.payments ? {
-            create: dto.payments.map(p => ({
-              method: p.method as PaymentMethodType,
-              amount: p.amount,
-              installments: p.installments || 1,
-              cardBrand: p.cardBrand,
-              notes: p.notes,
-            })),
-          } : {
-            create: {
-              method: (dto.paymentMethod || PaymentMethod.CASH) as PaymentMethodType,
-              amount: total,
-            },
-          },
-        },
-        include: {
-          customer: true,
-          items: {
-            include: {
-              product: {
-                select: { id: true, name: true, sku: true },
-              },
-            },
-          },
-          payments: true,
-        },
-      });
-
-      // Update product stock and create movements in parallel
-      const stockUpdates = dto.items.map(async (item) => {
-        const previousStock = Number(productStockMap.get(item.productId) || 0);
-        const newStock = previousStock - item.quantity;
-
-        // Update stock
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: { decrement: item.quantity },
-          },
-        });
-
-        // Create stock movement
-        await tx.stockMovement.create({
+    const sale = await this.prisma.$transaction(
+      async (tx) => {
+        const newSale = await tx.sale.create({
           data: {
             tenantId,
-            productId: item.productId,
-            type: 'OUT',
-            quantity: item.quantity,
-            reason: `Venda ${code}`,
-            reference: newSale.id,
-            previousStock,
-            newStock,
             userId,
+            customerId: dto.customerId,
+            code,
+            subtotal,
+            discount,
+            discountType: dto.discountType || "FIXED",
+            tax,
+            total,
+            paidAmount: dto.paidAmount || total,
+            changeAmount: (dto.paidAmount || total) - total,
+            paymentMethod: (dto.paymentMethod ||
+              PaymentMethod.CASH) as PaymentMethodType,
+            paymentStatus: "PAID",
+            status: "COMPLETED",
+            notes: dto.notes,
+            completedAt: new Date(),
+            items: {
+              create: itemsData,
+            },
+            payments: dto.payments
+              ? {
+                  create: dto.payments.map((p) => ({
+                    method: p.method as PaymentMethodType,
+                    amount: p.amount,
+                    installments: p.installments || 1,
+                    cardBrand: p.cardBrand,
+                    notes: p.notes,
+                  })),
+                }
+              : {
+                  create: {
+                    method: (dto.paymentMethod ||
+                      PaymentMethod.CASH) as PaymentMethodType,
+                    amount: total,
+                  },
+                },
+          },
+          include: {
+            customer: true,
+            items: {
+              include: {
+                product: {
+                  select: { id: true, name: true, sku: true },
+                },
+              },
+            },
+            payments: true,
           },
         });
-      });
 
-      await Promise.all(stockUpdates);
+        // Update product stock and create movements in parallel
+        const stockUpdates = dto.items.map(async (item) => {
+          const previousStock = Number(
+            productStockMap.get(item.productId) || 0,
+          );
+          const newStock = previousStock - item.quantity;
 
-      // Create financial transaction
-      await tx.transaction.create({
-        data: {
-          tenantId,
-          saleId: newSale.id,
-          type: 'INCOME',
-          description: `Venda ${code}`,
-          amount: total,
-          dueDate: new Date(),
-          paidDate: new Date(),
-          status: TransactionStatus.CONFIRMED as TransactionStatusType,
-          paymentMethod: (dto.paymentMethod || PaymentMethod.CASH) as PaymentMethodType,
-        },
-      });
+          // Update stock
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: { decrement: item.quantity },
+            },
+          });
 
-      // Update customer stats if exists
-      if (dto.customerId) {
-        await this.customersService.updateTotalSpent(dto.customerId);
-      }
+          // Create stock movement
+          await tx.stockMovement.create({
+            data: {
+              tenantId,
+              productId: item.productId,
+              type: "OUT",
+              quantity: item.quantity,
+              reason: `Venda ${code}`,
+              reference: newSale.id,
+              previousStock,
+              newStock,
+              userId,
+            },
+          });
+        });
 
-      return newSale;
-    }, {
-      maxWait: 10000, // 10 seconds max wait for transaction
-      timeout: 30000, // 30 seconds timeout for the entire transaction
-    });
+        await Promise.all(stockUpdates);
+
+        // Create financial transaction
+        await tx.transaction.create({
+          data: {
+            tenantId,
+            saleId: newSale.id,
+            type: "INCOME",
+            description: `Venda ${code}`,
+            amount: total,
+            dueDate: new Date(),
+            paidDate: new Date(),
+            status: TransactionStatus.CONFIRMED as TransactionStatusType,
+            paymentMethod: (dto.paymentMethod ||
+              PaymentMethod.CASH) as PaymentMethodType,
+          },
+        });
+
+        // Update customer stats if exists
+        if (dto.customerId) {
+          await this.customersService.updateTotalSpent(dto.customerId);
+        }
+
+        return newSale;
+      },
+      {
+        maxWait: 10000, // 10 seconds max wait for transaction
+        timeout: 30000, // 30 seconds timeout for the entire transaction
+      },
+    );
 
     // Send sale confirmation email (don't block the response)
-    this.notificationsService.sendSaleConfirmation(tenantId, sale).catch(error => {
-      console.error('Failed to send sale confirmation email:', error);
-    });
+    this.notificationsService
+      .sendSaleConfirmation(tenantId, sale)
+      .catch((error) => {
+        console.error("Failed to send sale confirmation email:", error);
+      });
 
     return sale;
   }
@@ -271,83 +307,90 @@ export class SalesService {
   async cancel(id: string, tenantId: string, userId: string, reason?: string) {
     const sale = await this.findOne(id, tenantId);
 
-    if (sale.status === 'CANCELLED') {
-      throw new BadRequestException('Venda já está cancelada');
+    if (sale.status === "CANCELLED") {
+      throw new BadRequestException("Venda já está cancelada");
     }
 
     // Pre-fetch all products for stock movements
-    const productIds = sale.items.map(item => item.productId);
+    const productIds = sale.items.map((item) => item.productId);
     const productsForStock = await this.prisma.product.findMany({
       where: { id: { in: productIds } },
       select: { id: true, stock: true },
     });
-    const productStockMap = new Map(productsForStock.map(p => [p.id, p.stock]));
+    const productStockMap = new Map(
+      productsForStock.map((p) => [p.id, p.stock]),
+    );
 
     // Reverse stock and financial with extended timeout
-    await this.prisma.$transaction(async (tx) => {
-      // Update sale status
-      await tx.sale.update({
-        where: { id },
-        data: {
-          status: 'CANCELLED',
-          paymentStatus: 'CANCELLED',
-          cancelledAt: new Date(),
-          notes: reason ? `${sale.notes || ''}\n[CANCELAMENTO]: ${reason}` : sale.notes,
-        },
-      });
-
-      // Restore product stock and create movements in parallel
-      const stockUpdates = sale.items.map(async (item) => {
-        const currentStock = productStockMap.get(item.productId) || 0;
-        const newStock = currentStock + item.quantity;
-
-        await tx.product.update({
-          where: { id: item.productId },
+    await this.prisma.$transaction(
+      async (tx) => {
+        // Update sale status
+        await tx.sale.update({
+          where: { id },
           data: {
-            stock: { increment: item.quantity },
+            status: "CANCELLED",
+            paymentStatus: "CANCELLED",
+            cancelledAt: new Date(),
+            notes: reason
+              ? `${sale.notes || ""}\n[CANCELAMENTO]: ${reason}`
+              : sale.notes,
           },
         });
 
-        await tx.stockMovement.create({
-          data: {
-            tenantId,
-            productId: item.productId,
-            type: 'IN',
-            quantity: item.quantity,
-            reason: `Cancelamento da venda ${sale.code}`,
-            reference: sale.id,
-            previousStock: currentStock,
-            newStock,
-            userId,
-          },
+        // Restore product stock and create movements in parallel
+        const stockUpdates = sale.items.map(async (item) => {
+          const currentStock = productStockMap.get(item.productId) || 0;
+          const newStock = currentStock + item.quantity;
+
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: { increment: item.quantity },
+            },
+          });
+
+          await tx.stockMovement.create({
+            data: {
+              tenantId,
+              productId: item.productId,
+              type: "IN",
+              quantity: item.quantity,
+              reason: `Cancelamento da venda ${sale.code}`,
+              reference: sale.id,
+              previousStock: currentStock,
+              newStock,
+              userId,
+            },
+          });
         });
-      });
 
-      await Promise.all(stockUpdates);
+        await Promise.all(stockUpdates);
 
-      // Cancel financial transaction
-      await tx.transaction.updateMany({
-        where: { saleId: id },
-        data: { status: TransactionStatus.CANCELLED },
-      });
+        // Cancel financial transaction
+        await tx.transaction.updateMany({
+          where: { saleId: id },
+          data: { status: TransactionStatus.CANCELLED },
+        });
 
-      // Update customer stats
-      if (sale.customerId) {
-        await this.customersService.updateTotalSpent(sale.customerId);
-      }
-    }, {
-      maxWait: 10000,
-      timeout: 30000,
-    });
+        // Update customer stats
+        if (sale.customerId) {
+          await this.customersService.updateTotalSpent(sale.customerId);
+        }
+      },
+      {
+        maxWait: 10000,
+        timeout: 30000,
+      },
+    );
 
-    return { message: 'Venda cancelada com sucesso' };
+    return { message: "Venda cancelada com sucesso" };
   }
 
   async getRecentSales(tenantId: string, limit = 10) {
     return this.prisma.sale.findMany({
-      where: { tenantId, status: 'COMPLETED' },
+      where: { tenantId, status: "COMPLETED" },
       take: limit,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         customer: {
           select: { id: true, name: true },
@@ -360,8 +403,8 @@ export class SalesService {
   }
 
   async getSalesStats(tenantId: string, startDate?: Date, endDate?: Date) {
-    const where: any = { tenantId, status: 'COMPLETED' };
-    
+    const where: any = { tenantId, status: "COMPLETED" };
+
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) where.createdAt.gte = startDate;
@@ -398,7 +441,7 @@ export class SalesService {
     const sales = await this.prisma.sale.findMany({
       where: {
         tenantId,
-        status: 'COMPLETED',
+        status: "COMPLETED",
         createdAt: { gte: startDate },
       },
       select: {
@@ -409,16 +452,16 @@ export class SalesService {
 
     // Group by day
     const dailyMap = new Map();
-    
+
     for (let i = 0; i <= days; i++) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const key = date.toISOString().split('T')[0];
+      const key = date.toISOString().split("T")[0];
       dailyMap.set(key, { date: key, total: 0, count: 0 });
     }
 
     for (const sale of sales) {
-      const key = sale.createdAt.toISOString().split('T')[0];
+      const key = sale.createdAt.toISOString().split("T")[0];
       if (dailyMap.has(key)) {
         const day = dailyMap.get(key);
         day.total += Number(sale.total);
