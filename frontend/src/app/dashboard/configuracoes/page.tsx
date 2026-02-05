@@ -300,6 +300,22 @@ export default function ConfiguracoesPage() {
     },
   });
 
+  // Test email connection with custom email mutation
+  const [testEmailAddress, setTestEmailAddress] = useState('');
+  const [showCustomEmailTest, setShowCustomEmailTest] = useState(false);
+  
+  const testCustomEmailMutation = useMutation({
+    mutationFn: (email: string) => settingsApi.testEmailConnectionCustom(email),
+    onSuccess: (data) => {
+      toast.success(data?.message || 'Email de teste enviado com sucesso!');
+      setTestEmailAddress('');
+      setShowCustomEmailTest(false);
+    },
+    onError: (error: any) => {
+      showApiError(error, 'Erro ao testar conexão de email');
+    },
+  });
+
   // Update general settings mutation
   const updateGeneralSettingsMutation = useMutation({
     mutationFn: (data: any) => settingsApi.updateGeneralSettings(data),
@@ -618,27 +634,89 @@ export default function ConfiguracoesPage() {
                   />
                 </div>
 
-                <div className="md:col-span-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => testEmailMutation.mutate()}
-                    disabled={testEmailMutation.isPending}
-                    className="btn-secondary flex items-center gap-2"
-                  >
-                    {testEmailMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Enviando email de teste...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        Testar Conexão
-                      </>
+                <div className="md:col-span-2 pt-2 space-y-3">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => testEmailMutation.mutate()}
+                      disabled={testEmailMutation.isPending}
+                      className="btn-secondary flex items-center gap-2"
+                    >
+                      {testEmailMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          Testar Conexão
+                        </>
+                      )}
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomEmailTest(!showCustomEmailTest)}
+                      className="btn-secondary"
+                    >
+                      Outro Email
+                    </button>
+                  </div>
+                  
+                  <AnimatePresence>
+                    {showCustomEmailTest && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="space-y-2">
+                          <input
+                            type="email"
+                            value={testEmailAddress}
+                            onChange={(e) => setTestEmailAddress(e.target.value)}
+                            placeholder="Digite um email para teste"
+                            className="input"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => testEmailAddress && testCustomEmailMutation.mutate(testEmailAddress)}
+                              disabled={!testEmailAddress || testCustomEmailMutation.isPending}
+                              className="btn-primary text-sm"
+                            >
+                              {testCustomEmailMutation.isPending ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  Enviando...
+                                </>
+                              ) : (
+                                'Enviar Teste'
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowCustomEmailTest(false);
+                                setTestEmailAddress('');
+                              }}
+                              className="btn-secondary text-sm"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
                     )}
-                  </button>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Envia um email de teste para o seu endereço cadastrado
+                  </AnimatePresence>
+                  
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {showCustomEmailTest 
+                      ? 'Digite um email personalizado para testar a conexão SMTP' 
+                      : 'Testa a conexão enviando um email para seu endereço cadastrado'
+                    }
                   </p>
                 </div>
               </div>
