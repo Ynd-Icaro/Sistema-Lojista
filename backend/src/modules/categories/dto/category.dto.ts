@@ -1,10 +1,11 @@
-import { IsNotEmpty, IsOptional, IsString, IsBoolean } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, IsBoolean, Length } from "class-validator";
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 
 export class CreateCategoryDto {
   @ApiProperty({ example: "Eletrônicos" })
-  @IsString()
+  @IsString({ message: "Nome deve ser um texto válido" })
   @IsNotEmpty({ message: "Nome é obrigatório" })
+  @Length(2, 100, { message: "Nome deve ter entre 2 e 100 caracteres" })
   name: string;
 
   @ApiPropertyOptional({ example: "Produtos eletrônicos em geral" })

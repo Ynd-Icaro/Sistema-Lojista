@@ -62,7 +62,7 @@ export default function InvitePage() {
     const loadInvitation = async () => {
       try {
         const response = await invitationsApi.getByToken(params.token as string);
-        setInvitation(response.data);
+        setInvitation(response);
       } catch (err: any) {
         setError(err.response?.data?.message || 'Convite inválido ou expirado');
       } finally {
@@ -92,7 +92,7 @@ export default function InvitePage() {
 
       // Fazer login automaticamente
       const loginResponse = await authApi.login(invitation.email, data.password);
-      const { accessToken, refreshToken, user } = loginResponse.data;
+      const { accessToken, refreshToken, user } = loginResponse;
       
       setAuth(user, accessToken, refreshToken);
       router.push('/dashboard');

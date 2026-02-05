@@ -13,7 +13,10 @@ import { showApiError } from '@/lib/error-handler';
 import { useModalCache } from '@/hooks/useModalCache';
 
 const quickCategorySchema = z.object({
-  name: z.string().min(2, 'Nome é obrigatório'),
+  name: z.string()
+    .min(1, 'Nome é obrigatório')
+    .min(2, 'Nome deve ter pelo menos 2 caracteres')
+    .max(100, 'Nome deve ter no máximo 100 caracteres'),
   description: z.string().optional(),
   color: z.string().optional(),
 });

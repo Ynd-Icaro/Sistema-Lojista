@@ -6,11 +6,14 @@ import {
   IsEmail,
   Min,
   Max,
+  IsNotEmpty,
+  Length,
 } from "class-validator";
 import { Type } from "class-transformer";
-
 export class CreateSupplierDto {
-  @IsString()
+  @IsString({ message: "Nome deve ser um texto válido" })
+  @IsNotEmpty({ message: "Nome é obrigatório" })
+  @Length(2, 100, { message: "Nome deve ter entre 2 e 100 caracteres" })
   name: string;
 
   @IsOptional()

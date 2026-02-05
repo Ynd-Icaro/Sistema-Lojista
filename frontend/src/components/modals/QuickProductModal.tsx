@@ -15,11 +15,19 @@ import { QuickSupplierModal } from './QuickSupplierModal';
 import { useModalCache } from '@/hooks/useModalCache';
 
 const quickProductSchema = z.object({
-  name: z.string().min(2, 'Nome é obrigatório'),
-  sku: z.string().min(1, 'SKU é obrigatório'),
-  price: z.number().min(0.01, 'Preço de venda é obrigatório'),
-  costPrice: z.number().min(0).optional(),
-  stock: z.number().min(0).default(0),
+  name: z.string()
+    .min(1, 'Nome é obrigatório')
+    .min(2, 'Nome deve ter pelo menos 2 caracteres')
+    .max(100, 'Nome deve ter no máximo 100 caracteres'),
+  sku: z.string()
+    .min(1, 'SKU é obrigatório')
+    .max(50, 'SKU deve ter no máximo 50 caracteres'),
+  price: z.number({ invalid_type_error: 'Preço deve ser um número válido' })
+    .min(0.01, 'Preço de venda deve ser maior que zero'),
+  costPrice: z.number({ invalid_type_error: 'Preço de custo deve ser um número válido' })
+    .min(0, 'Preço de custo não pode ser negativo').optional(),
+  stock: z.number({ invalid_type_error: 'Estoque deve ser um número válido' })
+    .min(0, 'Estoque não pode ser negativo').default(0),
   categoryId: z.string().optional(),
   supplierId: z.string().optional(),
   barcode: z.string().optional(),

@@ -42,20 +42,6 @@ export class InvitationsService {
   }
 
   async create(tenantId: string, invitedBy: string, dto: CreateInvitationDto) {
-    // Verificar se já existe um usuário com este email no tenant
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        email: dto.email,
-        tenantId,
-      },
-    });
-
-    if (existingUser) {
-      throw new ConflictException(
-        "Já existe um usuário com este email nesta empresa",
-      );
-    }
-
     // Verificar se já existe um convite pendente para este email
     const existingInvitation = await this.prisma.invitation.findFirst({
       where: {
@@ -286,9 +272,30 @@ export class InvitationsService {
     });
 
     if (existingUser) {
-      throw new ConflictException(
-        "Já existe um usuário com este email nesta empresa",
-      );
+      // Se o usuário já existe, atualizar o papel e marcar convite como aceito
+      const updatedUser = await this.prisma.$transaction(async (tx) => {
+        // Atualizar papel do usuário se for diferente
+        if (existingUser.role !== invitation.role) {
+          await tx.user.update({
+            where: { id: existingUser.id },
+            data: { role: invitation.role },
+          });
+        }
+
+        // Atualizar status do convite
+        await tx.invitation.update({
+          where: { id: invitation.id },
+          data: { status: "ACCEPTED" },
+        });
+
+        return await tx.user.findUnique({
+          where: { id: existingUser.id },
+          include: { tenant: true },
+        });
+      });
+
+      const { password: _, refreshToken: __, ...result } = updatedUser!;
+      return result;
     }
 
     // Criar o usuário

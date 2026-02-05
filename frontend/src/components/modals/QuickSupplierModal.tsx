@@ -13,7 +13,10 @@ import { showApiError } from '@/lib/error-handler';
 import { useModalCache } from '@/hooks/useModalCache';
 
 const quickSupplierSchema = z.object({
-  name: z.string().min(2, 'Nome é obrigatório'),
+  name: z.string()
+    .min(1, 'Nome é obrigatório')
+    .min(2, 'Nome deve ter pelo menos 2 caracteres')
+    .max(100, 'Nome deve ter no máximo 100 caracteres'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().optional(),
   contactPerson: z.string().optional(),
