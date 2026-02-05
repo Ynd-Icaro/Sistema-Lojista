@@ -60,6 +60,7 @@ export class AuthService {
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
+
     if (!isPasswordValid) {
       throw new UnauthorizedException("Email ou senha incorretos");
     }
@@ -98,57 +99,73 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
+
+
     // Validações básicas dos campos obrigatórios
     if (!dto.email || !dto.email.trim()) {
+
       throw new BadRequestException("O campo email é obrigatório");
     }
 
     if (!dto.password || dto.password.length < 6) {
+
       throw new BadRequestException("A senha deve ter no mínimo 6 caracteres");
     }
 
     if (!dto.name || !dto.name.trim()) {
+
       throw new BadRequestException("O campo nome é obrigatório");
     }
 
     // Validar formato do email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(dto.email)) {
+
       throw new BadRequestException("Formato de email inválido");
     }
 
     // Validar força da senha
     if (dto.password.length < 8) {
+
       throw new BadRequestException("A senha deve ter no mínimo 8 caracteres");
     }
 
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
     if (!passwordRegex.test(dto.password)) {
+
       throw new BadRequestException(
         "A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número",
       );
     }
+
 
     // Verificar se email já existe (não podemos usar findUnique pois email não é único globalmente)
     const existingUserCheck = await this.prisma.user.findFirst({
       where: { email: dto.email.toLowerCase().trim() },
     });
 
+
+
     if (existingUserCheck) {
+
       throw new BadRequestException("Este email já está cadastrado");
     }
 
     let tenantId = dto.tenantId;
 
+
     // Se tenantName for fornecido, criar novo tenant
     if (dto.tenantName) {
+
       if (dto.tenantName.trim().length < 3) {
+
         throw new BadRequestException(
           "O nome da empresa deve ter no mínimo 3 caracteres",
         );
       }
 
       if (dto.tenantName.trim().length > 100) {
+
         throw new BadRequestException(
           "O nome da empresa deve ter no máximo 100 caracteres",
         );
@@ -171,6 +188,7 @@ export class AuthService {
         counter++;
       }
 
+
       // Criar novo tenant
       const newTenant = await this.prisma.tenant.create({
         data: {
@@ -192,28 +210,36 @@ export class AuthService {
 
       tenantId = newTenant.id;
 
+
       // Quando criar novo tenant, usuário será ADMIN
       dto.role = UserRole.ADMIN;
+
     }
 
     if (!tenantId) {
+
       throw new BadRequestException(
         "É necessário informar o ID da empresa ou nome para criar uma nova empresa",
       );
     }
 
     // Verificar se tenant existe
+
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
     });
 
     if (!tenant) {
+
       throw new BadRequestException("Empresa não encontrada");
     }
 
     if (!tenant.isActive) {
+
       throw new BadRequestException("Esta empresa está inativa");
     }
+
+
 
     // Check if tenant exists (para caso tenantId seja fornecido diretamente)
     if (dto.tenantId && !dto.tenantName) {
@@ -240,6 +266,7 @@ export class AuthService {
     }
 
     // Check if email already exists in tenant
+
     const existingUser = await this.prisma.user.findFirst({
       where: {
         email: dto.email.toLowerCase().trim(),
@@ -248,15 +275,19 @@ export class AuthService {
     });
 
     if (existingUser) {
+
       throw new BadRequestException(
         "Este email já está cadastrado nesta empresa. Use outro email ou faça login.",
       );
     }
 
     // Hash password
+
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+
     // Create user
+
     const user = await this.prisma.user.create({
       data: {
         email: dto.email.toLowerCase().trim(),
@@ -271,7 +302,10 @@ export class AuthService {
       },
     });
 
+
+
     // Gerar tokens para auto-login após registro
+
     const payload = {
       sub: user.id,
       email: user.email,
@@ -282,10 +316,12 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, { expiresIn: "30d" });
 
+
     await this.prisma.user.update({
       where: { id: user.id },
       data: { refreshToken },
     });
+
 
     const { password: _, refreshToken: __, ...result } = user;
     return {

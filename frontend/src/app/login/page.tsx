@@ -37,11 +37,11 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
       const response = await authApi.login(data.email, data.password);
-      const { accessToken, refreshToken, user } = response.data;
 
+      const { accessToken, refreshToken, user } = response;
       setAuth(user, accessToken, refreshToken);
+
       toast.success(`Bem-vindo, ${user.name}!`);
-      router.replace('/dashboard');
     } catch (error: any) {
       const errorMessage = error.response?.data?.message;
 

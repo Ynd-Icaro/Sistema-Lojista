@@ -65,9 +65,10 @@ export default function RegisterPage() {
         email: data.email,
         password: data.password,
       });
-      const { accessToken, refreshToken, user } = response.data;
 
+      const { accessToken, refreshToken, user } = response.data;
       setAuth(user, accessToken, refreshToken);
+
       toast.success(`Conta criada com sucesso! Bem-vindo, ${user.name}!`);
       router.replace('/dashboard');
     } catch (error: any) {
