@@ -2,12 +2,12 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://sistema-lojista-production.up.railway.app/api',
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 segundos timeout
-  withCredentials: true, // Importante para cookies
+  withCredentials: false, // Desabilitado para CORS cross-origin
 });
 
 // Configuração de cookies robusta

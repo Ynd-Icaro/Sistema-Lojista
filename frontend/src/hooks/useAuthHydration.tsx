@@ -38,8 +38,8 @@ export function useAuthHydration() {
     if ((cookieToken || token) && !user) {
       setIsValidating(true);
       try {
-        const response = await authApi.profile();
-        const userData = response.data;
+        // authApi.profile() já retorna res.data diretamente
+        const userData = await authApi.profile();
         
         // Restaura a sessão completa
         setAuth(
@@ -56,7 +56,7 @@ export function useAuthHydration() {
         if (cookieRefresh) {
           try {
             const refreshResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/refresh`,
+              `${process.env.NEXT_PUBLIC_API_URL || 'https://sistema-lojista-production.up.railway.app/api'}/auth/refresh`,
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

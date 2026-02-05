@@ -42,6 +42,9 @@ export default function LoginPage() {
       setAuth(user, accessToken, refreshToken);
 
       toast.success(`Bem-vindo, ${user.name}!`);
+      
+      // Redirecionar para o dashboard
+      router.replace('/dashboard');
     } catch (error: any) {
       const errorMessage = error.response?.data?.message;
 

@@ -66,7 +66,8 @@ export default function RegisterPage() {
         password: data.password,
       });
 
-      const { accessToken, refreshToken, user } = response.data;
+      // A API já retorna os dados diretamente (sem .data adicional)
+      const { accessToken, refreshToken, user } = response;
       setAuth(user, accessToken, refreshToken);
 
       toast.success(`Conta criada com sucesso! Bem-vindo, ${user.name}!`);
