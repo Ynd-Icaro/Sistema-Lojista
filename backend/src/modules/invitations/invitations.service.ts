@@ -102,6 +102,7 @@ export class InvitationsService {
           role: roleLabels[userRole] || userRole,
           expiresAt,
         }),
+        tenantId, // Incluir tenantId para usar configurações SMTP do tenant
       });
     } catch (error) {
       console.error("Erro ao enviar email de convite:", error);

@@ -91,6 +91,15 @@ export class SettingsController {
     return this.settingsService.testEmailConnection(req.user.tenantId, userEmail);
   }
 
+  @Post("notifications/test-email-custom")
+  @ApiOperation({ summary: "Test SMTP email configuration with custom email" })
+  async testEmailConnectionCustom(
+    @Request() req,
+    @Body() data: { email: string },
+  ) {
+    return this.settingsService.testEmailConnection(req.user.tenantId, data.email);
+  }
+
   @Patch("permissions")
   @ApiOperation({ summary: "Update permissions (Admin only)" })
   async updatePermissions(@Request() req, @Body() data: UpdatePermissionsDto) {
