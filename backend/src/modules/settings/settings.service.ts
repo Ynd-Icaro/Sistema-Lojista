@@ -2,6 +2,7 @@ import {
   Injectable,
   ForbiddenException,
   NotFoundException,
+  BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import {
@@ -15,6 +16,7 @@ import {
   UpdateViewProfilesDto,
   ViewProfile,
 } from "./dto/settings.dto";
+import * as nodemailer from "nodemailer";
 
 // Permissões padrão do sistema
 const DEFAULT_PERMISSIONS: RolePermissionDto[] = [
@@ -644,6 +646,157 @@ export class SettingsService {
         settings: updatedSettings,
       },
     });
+  }
+
+  async testEmailConnection(tenantId: string, userEmail: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    const settings = (tenant?.settings as any) || {};
+
+    // Verificar se as configurações SMTP estão preenchidas
+    if (!settings.smtpHost || !settings.smtpUser || !settings.smtpPassword) {
+      throw new BadRequestException(
+        "Configure o servidor SMTP, usuário e senha antes de testar a conexão"
+      );
+    }
+
+    const port = settings.smtpPort || 587;
+    const isSecure = port === 465;
+
+    // Criar transporter temporário com as configurações do tenant
+    const transporter = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: port,
+      secure: isSecure,
+      auth: {
+        user: settings.smtpUser,
+        pass: settings.smtpPassword,
+      },
+      ...(isSecure ? {} : { tls: { rejectUnauthorized: false } }),
+    });
+
+    try {
+      // Verificar conexão
+      await transporter.verify();
+
+      // Enviar email de teste
+      const from = settings.smtpFrom 
+        ? `${tenant?.name || 'SmartFlux ERP'} <${settings.smtpFrom}>`
+        : `${tenant?.name || 'SmartFlux ERP'} <${settings.smtpUser}>`;
+
+      await transporter.sendMail({
+        from,
+        to: userEmail,
+        subject: "✅ Bem-vindo ao Sistema de Gestão de Vendas!",
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%); border-radius: 16px 16px 0 0; padding: 40px 30px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">
+                  ⚡ SmartFlux ERP
+                </h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">
+                  Sistema de Gestão de Vendas
+                </p>
+              </div>
+              
+              <div style="background: white; padding: 40px 30px; border-radius: 0 0 16px 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <div style="width: 80px; height: 80px; background: #10B981; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 40px;">✓</span>
+                  </div>
+                  <h2 style="color: #1e293b; margin: 0 0 10px 0; font-size: 24px;">
+                    Conexão Estabelecida com Sucesso!
+                  </h2>
+                </div>
+                
+                <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                  Olá! 👋
+                </p>
+                
+                <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                  <strong>Seu e-mail está autorizado para enviar as notificações do sistema para os clientes.</strong>
+                </p>
+                
+                <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+                  Essas notificações em alguns casos são notificações automáticas, incluindo:
+                </p>
+                
+                <ul style="color: #475569; font-size: 15px; line-height: 1.8; padding-left: 20px; margin-bottom: 30px;">
+                  <li>📧 Confirmação de pedidos e vendas</li>
+                  <li>📝 Envio de notas fiscais e recibos</li>
+                  <li>🔧 Atualizações de ordens de serviço</li>
+                  <li>💰 Lembretes de pagamentos</li>
+                  <li>🎉 Promoções e ofertas especiais</li>
+                </ul>
+                
+                <div style="background: #f1f5f9; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+                  <p style="color: #64748b; font-size: 14px; margin: 0;">
+                    <strong>Configuração utilizada:</strong><br>
+                    Servidor: ${settings.smtpHost}<br>
+                    Porta: ${port}<br>
+                    Usuário: ${settings.smtpUser}
+                  </p>
+                </div>
+                
+                <p style="color: #94a3b8; font-size: 14px; text-align: center; margin: 0;">
+                  Este é um e-mail de teste enviado automaticamente.<br>
+                  ${tenant?.name || 'SmartFlux ERP'} • ${new Date().toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `Bem-vindo ao Sistema de Gestão de Vendas!
+
+Seu e-mail está autorizado para enviar as notificações do sistema para os clientes.
+
+Essas notificações em alguns casos são notificações automáticas, incluindo:
+- Confirmação de pedidos e vendas
+- Envio de notas fiscais e recibos
+- Atualizações de ordens de serviço
+- Lembretes de pagamentos
+- Promoções e ofertas especiais
+
+Configuração utilizada:
+Servidor: ${settings.smtpHost}
+Porta: ${port}
+Usuário: ${settings.smtpUser}
+
+Este é um e-mail de teste enviado automaticamente.
+${tenant?.name || 'SmartFlux ERP'} • ${new Date().toLocaleDateString('pt-BR')}`,
+      });
+
+      return {
+        success: true,
+        message: "E-mail de teste enviado com sucesso! Verifique sua caixa de entrada.",
+      };
+    } catch (error: any) {
+      console.error("SMTP Test Error:", error);
+      
+      let errorMessage = "Falha ao conectar com o servidor SMTP.";
+      
+      if (error.code === 'EAUTH') {
+        errorMessage = "Erro de autenticação. Verifique o usuário e senha.";
+      } else if (error.code === 'ECONNREFUSED') {
+        errorMessage = "Conexão recusada. Verifique o servidor e a porta.";
+      } else if (error.code === 'ETIMEDOUT') {
+        errorMessage = "Tempo de conexão esgotado. Verifique o servidor e a porta.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new BadRequestException(errorMessage);
+    }
   }
 
   async updatePermissions(

@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Sliders,
   Lock,
+  Send,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -285,6 +286,17 @@ export default function ConfiguracoesPage() {
     },
     onError: (error: any) => {
       showApiError(error, 'Erro ao resetar permissões');
+    },
+  });
+
+  // Test email connection mutation
+  const testEmailMutation = useMutation({
+    mutationFn: () => settingsApi.testEmailConnection(),
+    onSuccess: (data) => {
+      toast.success(data?.message || 'Email de teste enviado com sucesso! Verifique sua caixa de entrada.');
+    },
+    onError: (error: any) => {
+      showApiError(error, 'Erro ao testar conexão de email');
     },
   });
 
@@ -604,6 +616,30 @@ export default function ConfiguracoesPage() {
                     className="input"
                     placeholder="noreply@suaempresa.com"
                   />
+                </div>
+
+                <div className="md:col-span-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => testEmailMutation.mutate()}
+                    disabled={testEmailMutation.isPending}
+                    className="btn-secondary flex items-center gap-2"
+                  >
+                    {testEmailMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Enviando email de teste...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Testar Conexão
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Envia um email de teste para o seu endereço cadastrado
+                  </p>
                 </div>
               </div>
             </form>

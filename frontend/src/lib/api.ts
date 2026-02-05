@@ -392,6 +392,7 @@ export const settingsApi = {
   get: () => api.get('/settings').then(res => res.data),
   updateCompany: (data: any) => api.patch('/settings/company', data).then(res => res.data),
   updateNotifications: (data: any) => api.patch('/settings/notifications', data).then(res => res.data),
+  testEmailConnection: () => api.post('/settings/notifications/test-email').then(res => res.data),
   // Permissions
   getPermissions: () => api.get('/settings/permissions').then(res => res.data),
   getUserPermissions: () => api.get('/settings/permissions/user').then(res => res.data),

@@ -21,6 +21,7 @@ import {
   UpdateUserPermissionsDto,
   UpdateViewProfilesDto,
 } from "./dto/settings.dto";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
 
 @ApiTags("Settings")
 @ApiBearerAuth()
@@ -79,6 +80,15 @@ export class SettingsController {
     @Body() data: UpdateNotificationsDto,
   ) {
     return this.settingsService.updateNotifications(req.user.tenantId, data);
+  }
+
+  @Post("notifications/test-email")
+  @ApiOperation({ summary: "Test SMTP email configuration" })
+  async testEmailConnection(
+    @Request() req,
+    @CurrentUser('email') userEmail: string,
+  ) {
+    return this.settingsService.testEmailConnection(req.user.tenantId, userEmail);
   }
 
   @Patch("permissions")
